@@ -1,0 +1,63 @@
+%!TeX root=miden_lattices.tex
+\section{Fast arithmetic in cyclotomic rings}
+
+
+\subsubsection{Parameter sets}
+
+The lattice based schemes Kyber, Saber, Falcon and Dilithium, which are all finalists in the NIST pqcrypto standardization
+effort (and many other schemes), all rely on arithmetic in cyclotomic rings of the form
+\[  R_{q,n} = \Z_q[x]/(x^n + 1)    \]
+for some modulus $q$ (not necessarily prime) and $n = 2^k$, and more in particular $n = 256, 512, 1024$.
+The moduli used by the different schemes are as follows:
+\bit
+\item Kyber: $q = 3329$
+\item Saber: $q = 2^{13}$
+\item Falcon: $q = 12289$
+\item Dilithium: $q = 2^{23} - 2^{13} + 1$
+\eit
+
+When the modulus $q$ is chosen such that $2n | \varphi(q)$ (in many cases $q$ is a prime so then $2n | q-1$), 
+it is well known that arithmetic in $R_q$ can be computed efficiently using the number theoretic transform.
+This can be done natively for Falcon and Dilithium, almost natively for Kyber and with a work-around for Saber.
+
+In Miden, the native modulus is $p = 2^{64} - 2^{32} + 1$, so $\Z_q$ in this case contains a root of unity 
+of order $2^{32}$ and in particular of order $2^k$ for any $k = 1, \ldots, 32$, and we therefore get native
+arithmetic in $R_{p,n}$ for all such $n = 2^k$.
+
+\subsubsection{Bound on the size of $q$}
+
+Since the $q$ used in the above schemes is different from the native $p$, we first need to give a bound for
+the maximum modulus size $q$ for each ring $R_{q,n}$ such that we can recover the product exactly (using 
+an extra modular reduction) from the product in $R_{p,n}$.
+
+So assume we are given two elements  $a(x), b(x) \in R_{q,n}$ written as $a(x) = \sum_{i = 0}^{n-1} a_i x^i$
+and $b(x) = \sum_{i = 0}^{n-1} b_i x^i$, then the product $c(x) = \sum_{i = 0}^{n-1} c_i x^i$ satisfies
+\[  c_i = \sum_{j = 0}^{i} a_{i -j} b_j  - \sum_{j = i+1}^{n-1} a_{n-j+i} b_{j}  \, . \]
+In particular, we have a sum of $n$ products of elements
+in $\Z_q$ (with $\pm$), so we see that the maximum bound on $c_i$ is given 
+\[ |c_i| < n q^2 \, , \]
+assuming that all coefficients were represented in $[0,q)$.  If a symmetric interval $[q/2, q/2)$ was used to 
+represent elements in $R_{q, n}$ the bound is clearly sufficient as well.  
+Since we need to be able to recover this as an integer (it can be negative) to be able to reduce modulo $q$ afterwards,
+it suffices that $p \geq 2 n q^2$.  For popular choices of $n$ above we therefore obtain the following upper bounds:
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+$n$ & $\max \log_2(q)$ \\
+\hline
+$256$ &  27.5 \\
+$512$ &   27 \\
+$1024$ &   26.5 \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Lazy reduction} In the schemes that use a module structure such as Kyber, Saber and Dilithium, 
+one often has to compute 
+a matrix vector product $\bA \cdot \bv$ where the matrix and vector contain elements of $R_{q,n}$.
+Assuming that the matrix has $\ell$ columns, we therefore could add $\ell$ such products together before
+doing the final reduction modulo $q$.  The addition of $\ell$ such products simply introduces an extra 
+factor of $\ell$ in the above bound.  The largest number of columns appearing in all of the above schemes
+is $7$ in the case of Dilithium level 5 parameter set.  It is easy to verify that for this case we have
+$p > 7 \cdot 2 \cdot 256 \cdot q^2$, so we can indeed postpone the final reduction after the addition 
+of the $\ell$ products.

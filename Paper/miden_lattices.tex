@@ -1,0 +1,223 @@
+\documentclass[oribibl,a4paper,envcountsame]{llncs}
+\setlength\overfullrule{2mm}
+
+\usepackage{amsmath,amssymb,todonotes,comment}
+\usepackage{slashbox}
+
+\usepackage{tikz}
+
+\usepackage{xcolor,colortbl}
+\definecolor{linkcolor}{rgb}{0.65,0,0}
+\definecolor{citecolor}{rgb}{0,0.65,0}
+\definecolor{urlcolor}{rgb}{0,0,0.65}
+\usepackage[colorlinks=true, linkcolor=linkcolor, urlcolor=urlcolor, citecolor=citecolor]{hyperref}
+
+\usepackage[british]{babel}
+\addto{\captionsbritish}{\renewcommand\abstractname{Abstract.}}
+
+\usepackage{listings}
+
+\definecolor{mGreen}{rgb}{0,0.6,0}
+\definecolor{mGray}{rgb}{0.5,0.5,0.5}
+\definecolor{mPurple}{rgb}{0.58,0,0.82}
+% \definecolor{backgroundColour}{rgb}{0.95,0.95,0.92}
+\definecolor{backgroundColour}{rgb}{0.99,0.99,0.95}
+
+\lstdefinestyle{CStyle}{
+    backgroundcolor=\color{backgroundColour},   
+    commentstyle=\color{mGreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{mGray},
+    stringstyle=\color{mPurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C
+}
+
+
+\hyphenation{ASIA-CRYPT an-ni-hi-lat-ed non-zero mo-du-lo mo-du-lus}
+
+\spnewtheorem*{lemma*}{Lemma}{\normalfont\bfseries}{\itshape}
+\spnewtheorem*{theorem*}{Theorem}{\normalfont\bfseries}{\itshape}
+\spnewtheorem*{remark*}{Remark}{\normalfont\itshape}{\normalfont}
+\spnewtheorem*{conjecture*}{Conjecture}{\normalfont\bfseries}{\itshape}
+\spnewtheorem*{discussion*}{Discussion}{\normalfont\itshape}{\normalfont}
+\spnewtheorem*{example*}{Example}{\normalfont\itshape}{\normalfont}
+
+
+%\usepackage{algorithm2e,algpseudocode}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{algpseudocode}
+%\RestyleAlgo{boxruled}
+\newcommand\negskipforalgo{\vspace{-3ex}}
+\SetAlgoSkip{negskipforalgo}
+\SetEndCharOfAlgoLine{}
+\DecMargin{2.2mm}
+\SetKwInput{Input}{Input}\SetKwInput{Output}{Output}
+\SetKwFor{While}{While}{do}{}
+\SetKwFor{ForEach}{For each}{do}{}
+\SetKwIF{If}{ElseIf}{Else}{If}{then}{else if}{else}{endif}
+\SetKw{Return}{Return}
+\SetKw{KwRet}{return}
+\SetKw{Recurse}{Recurse}
+
+
+\pagestyle{plain}
+
+\newcommand{\F}{\mathbb{F}}
+\newcommand{\Fpbar}{\overline{\mathbb{F}}_p}
+\newcommand{\Fqbar}{\overline{\mathbb{F}}_q}
+\newcommand{\Gal}{\mathrm{Gal}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\OO}{\mathcal{O}}
+\newcommand{\EE}{\mathcal{E}}
+\newcommand\OOu[1]{\OO_{\!{#1}}}
+\newcommand{\QQ}{\mathcal{Q}}
+\newcommand{\RR}{\mathcal{R}}
+\newcommand{\II}{\mathcal{I}}
+\newcommand{\JJ}{\mathcal{J}}
+\newcommand{\mA}{\mathcal{A}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\Ell}{\mathcal{E}\hspace{-0.065cm}\ell\hspace{-0.035cm}\ell}
+\renewcommand{\i}{\mathbf{i}}
+\renewcommand{\j}{\mathbf{j}}
+\renewcommand{\ij}{\mathbf{ij}}
+\newcommand{\ji}{\mathbf{ji}}
+
+\newcommand\Zsqrt[1]{\Z[\hspace{-.1em}\sqrt{#1}]}
+\newcommand\Qsqrt[1]{\Q(\!\sqrt{#1})}
+\newcommand\Leg[2]{\left( \frac{#1}{#2}\right)}
+\newcommand{\cl}{\operatorname{cl}}
+\newcommand{\Aut}{\operatorname{Aut}}
+\newcommand{\End}{\mathrm{End}}
+\newcommand{\Endp}{\mathrm{End}_p}
+\newcommand{\id}{\mathrm{id}}
+
+\newcommand{\bit}{\begin{itemize}}
+\newcommand{\eit}{\end{itemize}}
+
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bv}{\mathbf{v}}
+
+\newcommand{\afrak}{\mathfrak{a}}
+\newcommand{\bfrak}{\mathfrak{b}}
+\newcommand{\cfrak}{\mathfrak{c}}
+\newcommand{\gfrak}{\mathfrak{g}}
+\newcommand{\kfrak}{\mathfrak{k}}
+\newcommand{\lfrak}{\mathfrak{l}}
+\newcommand{\mfrak}{\mathfrak{m}}
+\newcommand{\pfrak}{\mathfrak{p}}
+\newcommand{\rfrak}{\mathfrak{r}}
+\newcommand{\tfrak}{\mathfrak{t}}
+\newcommand{\ufrak}{\mathfrak{u}}
+\newcommand{\xfrak}{\mathfrak{x}}
+\newcommand{\yfrak}{\mathfrak{y}}
+\newcommand{\zfrak}{\mathfrak{z}}
+\newcommand{\sfrak}{\mathfrak{s}}
+\newcommand{\Pfrak}{\mathfrak{P}}
+\newcommand{\tm}{T_m}
+\newcommand{\Pinf}{\mathbf{0}}
+
+\newcommand\norm[1]{\mathrm{N}(#1)}
+\newcommand\trace{\operatorname{tr}}
+
+\newcommand\im{\operatorname{im}}
+\newcommand\Frob{\operatorname{Frob}}
+
+\newcommand{\hooklongrightarrow}{\lhook\joinrel\longrightarrow}
+\newcommand{\hooklongleftarrow}{\longleftarrow\joinrel\rhook}
+\DeclareRobustCommand\twoheadlongrightarrow{\relbar\joinrel\twoheadrightarrow}
+
+\newcommand{\infpt}{\infty} % point at infinity
+\DeclareMathOperator{\poly}{poly}
+\DeclareMathOperator{\ord}{ord}
+\DeclareMathOperator{\val}{val}
+\DeclareMathOperator{\cond}{cond}
+\DeclareMathOperator{\ar}{ar}
+
+\newcommand\red{\textcolor{red}}
+
+\newif\ifsubmission
+%\submissiontrue
+\submissionfalse
+
+\title{Post-quantum cryptography in Miden}
+\ifsubmission
+\author{\vspace*{-1cm} }
+\institute{\vspace*{-1cm}\ }
+\else
+\author{
+    Alan Szepieniec\inst{1}
+    \and
+    Frederik Vercauteren\inst{2}
+    \\[2mm]
+    {\footnotesize
+        \email{alan.szepieniec@gmail.com},
+        \email{frederik.vercauteren@kuleuven.be}
+    }
+}
+\institute{
+     Alan's company, Swiss 
+     \and 
+     imec-COSIC, KU Leuven, Belgium
+}
+\fi
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\ifsubmission
+\else
+\vspace{-1ex}
+\begingroup
+  \makeatletter
+  \def\@thefnmark{$\ast$}\relax
+  \@footnotetext{\relax
+  Date of this document: \today.}
+\endgroup
+\vspace{-1ex}
+\fi
+
+\begin{abstract}
+
+\end{abstract}
+
+\begin{keywords}
+
+\end{keywords}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{intro}
+
+\input{ring}
+
+\input{signature}
+
+\input{encryption}
+
+\input{commitment}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\bibliographystyle{plain}
+%\bibliography{bib}
+
+\end{document}
+
