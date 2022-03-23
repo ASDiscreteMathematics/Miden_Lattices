@@ -1,4 +1,4 @@
-q = 2^64 - 2^32 + 1
+q = 2**64 - 2**32 + 1
 
 # 512-th primitive root of unity mod q
 # needed to multipy in Z[x]/(x^256+1)
