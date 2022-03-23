@@ -1,7 +1,6 @@
 %!TeX root=miden_lattices.tex
 \section{Fast arithmetic in cyclotomic rings}
 
-
 \subsubsection{Parameter sets}
 
 The lattice based schemes Kyber, Saber, Falcon and Dilithium, which are all finalists in the NIST pqcrypto standardization
@@ -61,3 +60,181 @@ factor of $\ell$ in the above bound.  The largest number of columns appearing in
 is $7$ in the case of Dilithium level 5 parameter set.  It is easy to verify that for this case we have
 $p > 7 \cdot 2 \cdot 256 \cdot q^2$, so we can indeed postpone the final reduction after the addition 
 of the $\ell$ products.
+
+\subsubsection{Multiplication using NTT}
+
+Let $N$ be a power of $2$ and assume that $q-1 \equiv 0 \bmod 2N$, and let $\psi$ be a primitive $2N$-th root 
+of unity and $\omega = \psi^2$ a primitive $N$-th root of unity.  The $N$-point NTT of a sequence 
+$[a[0], \ldots, a[N-1]]$ is denoted as $\tilde{a} = NTT(a)$ and defined by $\tilde{a}[i] = \sum_{j = 0}^{N-1} a[j] \omega^{i j}$
+for $i = 0, \ldots, n-1$.  The inverse transformation $b = INTT(\tilde{a})$ is given by 
+$b[i] = \frac{1}{N} \sum_{j = 0}^{N-1} a[j] \omega^{-i j}$, which can be computed by replacing $\omega$ 
+by $\omega^{-1}$ and scaling by $N$.
+
+Since $\omega$ is an $N$-th root of unity, note that this also corresponds to the evaluation 
+of the polynomial $a(x) \in \Z_q[x]/(x^N - 1)$ in $\omega$, and as such we can multiply two 
+polynomials in $a(x), b(x) \in \Z_q[x]/(x^N - 1)$ by computing
+\[  c(x) = INTT(NTT(a) \cdot NTT(b)  \]
+where $\cdot$ denotes pointwise multiplication.
+
+The standard approach to NTT is given in Algorithm~\ref{algo:ntt1} where BitReverse
+computes an array $A$ such that $A[k] = a[BitReverse(k)]$ obtained by reversing
+the binary expansion of $k$ using $b = \log_2(N)$ bits to write $k$.
+In particular, if $k = k_0 \ldots k_{b-1}$ then $BitReverse(k) = k_{b-1} \ldots k_0$. 
+\begin{algorithm}[!t] \label{algo:ntt1}
+\begin{scriptsize}
+\caption{\emph{Iterative NTT}}
+\KwIn{Polynomial $a(x) \in \mathbb{Z}_q[\mathbf{x}]$ of
+degree $N-1$ and $N$-th primitive root $\omega_N \in \mathbb{Z}_q$ of unity}
+\KwOut{Polynomial $A(x) \in \mathbb{Z}_q[\mathbf{x}]$ = NTT($a$)}
+\Begin{
+\everypar={\nl}
+$A \leftarrow BitReverse(a)$;
+
+\For{$m=2$ to $N$ by $m=2m$}
+{
+$\omega_m \leftarrow \omega_N^{N/m}$ \;
+
+$\omega \leftarrow 1$ \;
+
+\For{$j=0$ to $m/2-1$}
+{
+\For{$k=0$ to $N-1$ by $m$}
+{
+
+$t \leftarrow \omega \cdot A[k+j+m/2]$ \;
+$u \leftarrow A[k+j]$ \;
+$A[k+j] \leftarrow u+t \bmod q$ \;
+$A[k+j+m/2] \leftarrow u-t \bmod q$ \;
+}
+$\omega \leftarrow \omega \cdot \omega_m$ \;
+}
+}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+
+The above however is not directly applicable since we need arithmetic in the ring $\Z_q[x]/(x^N+1)$.
+Note that the roots of $x^N+1$ are given by $\psi^{2k + 1}$ for $k = 0, \ldots, n-1$, so we would 
+need to compute the evalutions of $a(x)$ in those powers.  Since $\psi^{2k + 1} = \omega^k \psi$, 
+so we could use the standard NTT above on the scaled polynomial $a(\psi x)$, and we would obtain
+\[  c(\psi x) =    INTT(NTT(a(\psi x)) \cdot NTT(b(\psi x))   \, . \]
+This requires scaling of $a(x), b(x)$ and an inverse scaling of $c(\psi x)$, where the latter could be 
+combined with the scaling by $N$ in the final step of the INTT.
+
+\subsubsection{Optimizing the NTT}
+
+To optimize the NTT, it is possible to absorb the scaling by $\psi$ and also to work around 
+the BitReverse as is done in \cite{longa}.  In the forward NTT, the function will return a $\psi$-scaled NTT
+in bit-reverse order, which will be undone in the INTT.
+
+Let $NTT_{sb}$ denote the function which computes the NTT of the scaled polynomial $a(\psi x)$ and where the output 
+is given in bit-reversed order, in particular the output is given by 
+\[  BitReverse(  [a(\psi \omega^{k}) : k \in [0 \ldots N-1]]   ) \, .  \]
+The resulting algorithm is given in Algorithm~\ref{algo:ntt_sb} and $\Psi_{rev}$ is the 
+array given by 
+\[ \Psi_{rev} = BitReverse( [ \psi^{k}) : k \in [0 \ldots N-1]] ) \, . \]
+
+\begin{algorithm}[!t] \label{algo:ntt_sb}
+\begin{scriptsize}
+\caption{\emph{$NTT_{sb}$}}
+\KwIn{A vector $a = [a[0], \ldots, a[N-1]]$ of elements in $\Z_q$ in standard order 
+and $2N$-th primitive root $\psi \in \mathbb{Z}_q$ of unity, and 
+precomputed table $\Psi_{rev}$ containing the powers of $\psi$ in bit-reversed order}
+\KwOut{$NTT_{sb}$($a$), i.e.\ bit-reversed NTT of scaled $a(\psi x)$}
+\Begin{
+\everypar={\nl}
+$t = n$
+
+\For{$m = 1; m < n; m = 2m$} 
+{
+$t = t/2$
+
+\For{$i = 0; i < m; i++$} 
+{
+$j1 = 2 \cdot i \cdot t$
+
+$j2 = j1 + t - 1$
+
+$S = \Psi_{rev}[m + i]$
+
+\For{$j = j1; j \le j2; j++$} 
+{
+$U = a[j]$
+
+$V = a[j + t] \cdot S$
+
+$a[j] = U + V \bmod q$
+
+$a[j + t] = U - V \bmod q$
+}
+}
+}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+Let $INTT_{sb}$ denote the function which computes the inverse NTT of a bit-reversed array 
+including scaling by $\psi^-1$, i.e.\ $INTT_{sb}$ satisfies
+\[ INTT_{sb} (NTT_{sb}(a(x)) = a(x) \, . \]
+Similarly as for $NTT_{sb}$ it uses an array $\Psi^-1_{rev}$ of powers of $\psi^{-1}$ in bit-reversed order
+\[ \Psi^{-1}_{rev} = BitReverse( [ \psi^{-k}) : k \in [0 \ldots N-1]] ) \, . \]
+
+\begin{algorithm}[!t] \label{algo:intt_sb}
+\begin{scriptsize}
+\caption{\emph{$INTT_{sb}$}}
+\KwIn{A vector $a = [a[0], \ldots, a[N-1]]$ of elements in $\Z_q$ in standard order 
+and $2N$-th primitive root $\psi \in \mathbb{Z}_q$ of unity, and 
+precomputed table $\Psi^{-1}_{rev}$ containing the powers of $\psi^{-1}$ in bit-reversed order}
+\KwOut{$INTT_{sb}$($a$) in standard ordering}
+\Begin{
+\everypar={\nl}
+$t = 1$
+
+\For {$m = N; m > 1; m = m/2$}
+{
+$j1 = 0$
+
+$h = m/2$
+
+\For {$i = 0; i < h; i++$}
+{
+$j2 = j1 + t - 1$
+
+$S = \Psi^{-1}_{rev}[h + i]$
+
+\For {$j = j1; j \le j2; j++$}
+{
+$U = a[j]$
+
+$V = a[j + t]$
+
+$a[j] = U + V \bmod q$
+
+$a[j + t] = (U - V ) \cdot S \bmod q$
+}
+$j1 = j1 + 2t$
+}
+$t = 2t$
+}
+\For {$j = 0; j < N; j++$} 
+{
+$a[j] = a[j] \cdot N^{-1} \bmod q$
+}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+To compute the product $c(x)$ of two polynomials in $a(x), b(x) \in \Z_q[x]/(x^N+1)$, we can now simply it as 
+\[  c(x) = INTT_{sb}(NTT_{sb}(a(x)) \cdot NTT_{sb}(b(x)) \, . \]
+
+The function $NTT_{sb}$ uses $N/2 \log_2(N)$ multiplications modulo $q$ and a total of $N \log_2(N)$ additions/subtractions modulo $q$.
+Due to the final scaling, the function $INTT_{sb}$ requires $N/2 \log_2(N) + N$ multiplications modulo $q$ and 
+$N \log_2(N)$ additions/subtractions modulo $q$.
+
+A polynomial product in $\Z_q[x]/(x^N+1)$ therefore requires $3N/2 \log_2(N) + N$ multiplications and $3 N \log_2(N)$ 
+additions/subtractions.  This should be compared to the $N^2$ multiplications and additions required for schoolbook multiplication.
+
+Example: for $N = 256$ we thus require 3328 multiplications modulo $q$ and 6144 additions modulo $q$ compared to the 
+65536 multiplications/additions for the schoolbook approach.
+
