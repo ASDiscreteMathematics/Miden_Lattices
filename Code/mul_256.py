@@ -184,5 +184,5 @@ b = [randint(0,q-1) for _ in range(N)]
 c = schoolbook_mult(a, b)
 FastMul_256(a,b)
 
-a == c
+print("Sanity check :", a == c)
 
