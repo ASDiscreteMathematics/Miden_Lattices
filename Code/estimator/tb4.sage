@@ -4,6 +4,6 @@ tb4 = LWE.Parameters(n=1024, q=previous_prime(2^16), Xs=ND.Uniform(-5,5), Xe=ND.
 
 LWE.estimate.rough(tb4) # does not crash
 
-LWE.estimate(tb4) # does crash
+LWE.estimate(tb4) # actually, I can't make it crash any more
 
 
