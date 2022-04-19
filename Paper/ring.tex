@@ -144,32 +144,24 @@ precomputed table $\Psi_{rev}$ containing the powers of $\psi$ in bit-reversed o
 \KwOut{$NTT_{sb}$($a$), i.e.\ bit-reversed NTT of scaled $a(\psi x)$}
 \Begin{
 \everypar={\nl}
-$t = n$
+$k = 0$
 
-\For{$m = 1; m < n; m = 2m$} 
+\For{$len = N/2; len > 0; len = len/2$} 
 {
-$t = t/2$
-
-\For{$i = 0; i < m; i++$} 
+ \For{$start = 0; start < N; start = j + len$} 
 {
-$j1 = 2 \cdot i \cdot t$
+      $S = \Psi_{rev}[++k]$
 
-$j2 = j1 + t - 1$
-
-$S = \Psi_{rev}[m + i]$
-
-\For{$j = j1; j \le j2; j++$} 
+\For{$j = start; j < start + len; ++j$} 
 {
-$U = a[j]$
+        $t = S * a[j + len] \bmod q$
 
-$V = a[j + t] \cdot S$
+        $a[j + len] = a[j] - t \bmod q$
 
-$a[j] = U + V \bmod q$
-
-$a[j + t] = U - V \bmod q$
-}
-}
-}
+        $a[j] = a[j] + t \bmod q$
+      }
+    }
+  }
 }
 \end{scriptsize}
 \end{algorithm} 
@@ -177,50 +169,40 @@ $a[j + t] = U - V \bmod q$
 Let $INTT_{sb}$ denote the function which computes the inverse NTT of a bit-reversed array 
 including scaling by $\psi^-1$, i.e.\ $INTT_{sb}$ satisfies
 \[ INTT_{sb} (NTT_{sb}(a(x)) = a(x) \, . \]
-Similarly as for $NTT_{sb}$ it uses an array $\Psi^-1_{rev}$ of powers of $\psi^{-1}$ in bit-reversed order
-\[ \Psi^{-1}_{rev} = BitReverse( [ \psi^{-k}) : k \in [0 \ldots N-1]] ) \, . \]
 
 \begin{algorithm}[!t] \label{algo:intt_sb}
 \begin{scriptsize}
 \caption{\emph{$INTT_{sb}$}}
-\KwIn{A vector $a = [a[0], \ldots, a[N-1]]$ of elements in $\Z_q$ in standard order 
+\KwIn{A vector $a = [a[0], \ldots, a[N-1]]$ of elements in $\Z_q$ in bit-reversed order 
 and $2N$-th primitive root $\psi \in \mathbb{Z}_q$ of unity, and 
-precomputed table $\Psi^{-1}_{rev}$ containing the powers of $\psi^{-1}$ in bit-reversed order}
+precomputed table $\Psi_{rev}$ containing the powers of $\psi$ in bit-reversed order}
 \KwOut{$INTT_{sb}$($a$) in standard ordering}
 \Begin{
 \everypar={\nl}
-$t = 1$
+$k = N$
 
-\For {$m = N; m > 1; m = m/2$}
+\For{$len = 1; len < N; len = 2*len $} 
 {
-$j1 = 0$
-
-$h = m/2$
-
-\For {$i = 0; i < h; i++$}
+   \For{$start = 0; start < N; start = j + len$} 
 {
-$j2 = j1 + t - 1$
+      $S = -\Psi_{rev}[--k]$
 
-$S = \Psi^{-1}_{rev}[h + i]$
-
-\For {$j = j1; j \le j2; j++$}
+\For{$j = start; j < start + len; ++j$} 
 {
-$U = a[j]$
+        $t = a[j]$
 
-$V = a[j + t]$
+        $a[j] = t + a[j + len] \bmod q$
 
-$a[j] = U + V \bmod q$
+        $a[j + len] = S*(t - a[j + len]) \bmod q$
+        }
+    }
+  }
 
-$a[j + t] = (U - V ) \cdot S \bmod q$
-}
-$j1 = j1 + 2t$
-}
-$t = 2t$
-}
-\For {$j = 0; j < N; j++$} 
-{
-$a[j] = a[j] \cdot N^{-1} \bmod q$
-}
+  \For{$j = 0; j < N; ++j$} 
+ {
+    $a[j] =a[j]/N$
+  }
+
 }
 \end{scriptsize}
 \end{algorithm} 
@@ -228,13 +210,131 @@ $a[j] = a[j] \cdot N^{-1} \bmod q$
 To compute the product $c(x)$ of two polynomials in $a(x), b(x) \in \Z_q[x]/(x^N+1)$, we can now simply it as 
 \[  c(x) = INTT_{sb}(NTT_{sb}(a(x)) \cdot NTT_{sb}(b(x)) \, . \]
 
-The function $NTT_{sb}$ uses $N/2 \log_2(N)$ multiplications modulo $q$ and a total of $N \log_2(N)$ additions/subtractions modulo $q$.
-Due to the final scaling, the function $INTT_{sb}$ requires $N/2 \log_2(N) + N$ multiplications modulo $q$ and 
+The function $NTT_{sb}$ uses $(N/2) \log_2(N)$ multiplications modulo $q$ and a total of $N \log_2(N)$ additions/subtractions modulo $q$.
+Due to the final scaling, the function $INTT_{sb}$ requires $(N/2) \log_2(N) + N$ multiplications modulo $q$ and 
 $N \log_2(N)$ additions/subtractions modulo $q$.
 
-A polynomial product in $\Z_q[x]/(x^N+1)$ therefore requires $3N/2 \log_2(N) + N$ multiplications and $3 N \log_2(N)$ 
+A polynomial product in $\Z_q[x]/(x^N+1)$ therefore requires $(3N/2) \log_2(N) + N$ multiplications and $3 N \log_2(N)$ 
 additions/subtractions.  This should be compared to the $N^2$ multiplications and additions required for schoolbook multiplication.
 
 Example: for $N = 256$ we thus require 3328 multiplications modulo $q$ and 6144 additions modulo $q$ compared to the 
 65536 multiplications/additions for the schoolbook approach.
+
+\subsubsection{NTT for $4$-element word arrays}
+
+In Miden VM, a word consists of $4$ field elements and the RAM is word-addressable so we can read/write 4 field
+elements in one cycle.  As such, it is interesting to develop an NTT routine which takes into account the word-addressable
+memory.   We see two possibilities depending on the application:
+
+\noindent \textbf{4 parallel NTTs}
+
+In many cases, e.g.\ in Dilithium, more than one NTT is required to be executed at the same time, e.g.\
+in Dilithium, we require $k + \ell$ NTTs and $k$ INTTs for $(k,\ell) = (4,4), (6,5), (8,7)$, so we can 
+easily execute $4$ NTTs in parallel.
+
+The idea is simply to take the 4 input $N$-vectors and pack them columwise in the $4$ element words, i.e.\
+the $N$ words consist of 
+\[ [A[k], B[k], C[k], D[k]] \]
+where $A,B,C,D$ are the $4$ input vectors.    Algorithm~\ref{} remains exactly the same, with the assumption that
+all operations are now executed in a SIMD fashion.
+
+\noindent \textbf{Single NTT for $4$-element word arrays}
+
+Inspired by the $2$-element word memory in~\cite{}, we extend this method to $4$ element words, by packing 
+two consecutive words in the $2$-element array into one $4$-element word.
+
+In particular, we simple store 4 consecutive elements in a logical array as a 4-element word.
+
+Looking at the NTT however, we see that in one iteration elements of the form $a[j]$ and $a[j+len]$
+are manipulated for $len = N/2, \ldots, 1$ where $len$ is divided by $2$ in each iteration.  This indicates that
+the input array to the NTT should be ordered as follows:
+\[ [  [A[2k], A[2k+N/2], A[2k+1], A[2k +1 + N/2]  ] \, . \]
+Furthermore, since in the next iteration we still want to have that elements which are combined in 
+the NTT butterfly are in the same word, we will have to read out a second word which contains the
+elements $len/2$ removed.  This allows us to keep elements that are combined in the butterfly in 
+the same word, i.e.\ in every iteration the elements saved will be of the form
+\[ [  [A[2k], A[2k+len], A[2k+1], A[2k +1 + len]  ] \, . \]
+
+The result is summarized in Algorithm~\ref{algo:ntt4_sb}.  Note that the input has to be formatted as above, 
+but that the output is a linearly organized array of quadruples of the bitreversed result, i.e.\ if 
+$B$ would be the output of $NTT_{sb}$, then the output of $NTT4_{sb}$ simply is 
+\[ [B[4k], B[4k+1], B[4k+2], B[4k+3]] \]
+
+\begin{algorithm}[!t] \label{algo:ntt4_sb}
+\begin{scriptsize}
+\caption{\emph{$NTT4_{sb}$}}
+\KwIn{A vector of quadruples $a = [[A[2k], A[2k+N/2], A[2k+1], A[2k +1 + N/2] ]$ for $k =0, \ldots, N/4$ 
+of elements in $\Z_q$ and $2N$-th primitive root $\psi \in \mathbb{Z}_q$ of unity, and 
+precomputed table $\Psi_{rev}$ containing the powers of $\psi$ in bit-reversed order}
+\KwOut{$NTT_{sb}$($a$), i.e.\ bit-reversed NTT of scaled $a(\psi x)$ in linear order
+as a vector of quadruples}
+\Begin{
+\everypar={\nl}
+$k = 0$
+
+\For{$len = N/2; len > 2; len = len/2$} 
+{
+ \For{$start = 0; start < N/4; start = j + len/2$} 
+{
+      $S = \Psi_{rev}[++k]$
+
+\For{$j = start; j < start + len/4; ++j$} 
+{
+	$A1 = a[j]$  // first quadruple
+	
+	$A2 = a[j+len/4]$  // second quadruple
+
+	$t1 = S * A1[1]$
+
+	$t2 = S * A2[1]$
+
+	$t3 = S * A1[3]$
+
+	$t4 = S * A2[3]$
+	
+	$a[j] = [A1[0] + t1, A2[0] + t2, A1[2] + t3, A2[2] + t4]$
+
+        $a[j+ len/4] := [A1[0] - t1, A2[0] - t2, A1[2] - t3, A2[2] - t4] $
+
+      }
+    }
+  }
+
+// len = 2 done separately
+
+\For{$j = 0; j < N/4; ++j$}
+{ 
+      $S =  \Psi_{rev}[++k]$
+
+      $A1 = a[j]$
+
+      $t1 = S * A1[1]$
+
+      $t2 = S * A1[3]$
+
+      $a[j] := [A1[0] + t1, A1[2] + t2, A1[0] - t1, A1[2] - t2]$
+}
+
+// len = 1 done separately
+
+\For{$j = 0; j < N/4; ++j$}
+{ 
+      $S =  \Psi_{rev}[++k]$
+
+      $A1 = a[j]$
+
+      $t1 = S * A1[1]$
+
+      $S =  \Psi_{rev}[++k]$
+
+      $t2 = S * A1[3]$
+
+      $a[j] := [A1[0] + t1, A1[2] + t2, A1[0] - t1, A1[2] - t2]$
+}
+
+}
+\end{scriptsize}
+\end{algorithm} 
+
+
 

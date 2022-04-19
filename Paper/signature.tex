@@ -1,3 +1,85 @@
 %!TeX root=miden_lattices.tex
 \section{Post-quantum signatures}
  
+\subsection{Dilithium}
+
+Dilithium is a module-LWE based signature scheme based on Fiat-Shamir with aborts.  The base ring is given 
+by $R_{q,n} = \Z_q[x]/(x^n+1)$ with $q = 2^{23} - 2^{13} - 1 = 8380417$.
+
+The public key consists of the high bits (13 lower order bits are dropped) of MLWE-samples
+\[ \bt :=  \bA \bs_1 + \bs_2 \]
+where $\bA$ is a $k \times \ell$  matrix over $R_{q,n}$ derived from a seed $\rho$ 
+and $\bs_1, \bs_2$ vectors of length $\ell$ and $k$ make up the secret key and 
+contain elements in $R_{q,n}$ with small coefficients of max size $\eta$.
+A public key then contains the following data $pk = (\rho, \bt_1)$ where $\bt_1$
+is obtained from $\bt$ by dropping the lowest $13$ bits.
+A summary of the relevant (for verification) parameters is given in Table~\ref{tab:dilithium}.
+
+\begin{table}\caption{Dilithium parameters used in verification}\label{tab:dilithium}
+\begin{center}
+\begin{tabular}{c|c|c|c}
+\hline
+Security level & 2 & 3 & 5 \\
+\hline
+$(k,\ell)$ & (4,4) & (6,5) & (8,7) \\
+$\eta$ & 2 & 4 & 2 \\
+$\beta$ & $78$ & $196$ & $120$ \\
+$\gamma_1$ & $2^{17}$ & $2^{19}$ & $2^{19}$ \\ 
+$\gamma_2$ & $(q-1)/88$ & $(q-1)/32$ & $(q-1)/32$ \\
+$\omega$ & $80$ & $55$ & $75$ \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+A signature $\sigma = (\tilde{c}, \bz, \bh)$ consists of 3 components:
+\bit
+\item $\tilde{c}$: a challenge of $256$ bits obtained as the hash of the public key, message and $\bA \by$ where $\by$
+is a vector with elements in $R_{q,n}$ with coefficients smaller than $\gamma_1$. 
+\item $\bz$: a vector of length $\ell$ of polynomials with small coefficients, in particular, smaller than $\gamma_1 - \beta$.
+\item $\bh$: a vector of length $k$ consisting of $k$ hint polynomials (essentially the overflows of a particular sum) whose
+coefficients are ${0,1}$ and the max number of $1$'s in $\bh$ is $\omega$.
+\eit
+
+The signature verification then proceeds as follows, where $H$ is SHAKE-256.
+\begin{algorithm}[!ht] \label{algo:dilithium_verify}
+\begin{scriptsize}
+\caption{\emph{Dilithium verification}}
+\KwIn{public key $pk = (\rho, \bt_1)$, message $M$, signature $\sigma = (\tilde{c}, \bz, \bh)$}
+\KwOut{boolean indicating if signature is valid}
+\Begin{
+\everypar={\nl}
+$\bA \in R_{q,n}^{k \times \ell}$ := ExpandA($\rho$)
+ 
+$\mu \in \{0,1\}^{512} := H(H(\rho || \bt_1) || M)$
+
+$c := SampleInBall(\tilde{c})$
+
+$\bw_1' := UseHint_q(h, \bA \bz - 2^d \cdot c \bt_1, 2 \gamma_2)$
+
+return $||\bz||_{\infty} < \gamma_1 - \beta$ and $\tilde{c} = H(\mu || \bw_1')$ and $\# 1's$ in $\bh$ is $\leq \omega$
+}
+\end{scriptsize}
+\end{algorithm} 
+
+The matrix $\bA \in R_{q,n}^{k \times \ell}$ is generated from $\rho$ but directly into the NTT domain.
+In particular, every element $a_{i,j} \in R_q$ is represented in a very specific format, which is the following:
+\bit
+\item Let $r = 1753$ which is a $512$-th root of unity modulo $q$
+\item A polynomial $a(x) \in R_q$ in NTT representation then is given by the array:
+\[ [a(r_0), a(-r_0), a(r_1), a(-r_1), \ldots, a(r_{127}), a(-r_{127})] \]
+\eit
+where by definition $r_i = r^{brv(128 + i)}$ where $brv(k)$ denotes the 8-bit bitreversal of the number $k$.
+Note that this is the same result as the bit-reversed version of the normal array
+\[  [a(r), a(r^3), \ldots, a(r^{N-1})] \, .  \]
+
+
+This is done to speed up step 4 in the verification procedure above, which can be computed as 
+\[ NTT^{-1} (  \bA \cdot NTT(\bz)  - NTT(c) \cdot NTT(\bt_1 \cdot 2^d))  \]
+which requires:
+\bit
+\item $\ell + k + 1$ NTTs
+\item $k$ INTTs
+\item $k (\ell + 1)$ pointwise multiplications of arrays of 256 elements in $\F_q$
+\eit
+

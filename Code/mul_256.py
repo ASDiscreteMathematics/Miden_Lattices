@@ -1,3 +1,5 @@
+import random
+
 q = 2**64 - 2**32 + 1
 
 # 512-th primitive root of unity mod q
@@ -123,6 +125,25 @@ def NTT_sb_256(a):
 				a[j] = (U + V)%q
 				a[j + t] = (U - V)%q
 		m = 2*m
+		
+		
+# second alternative version		
+		
+def NTT_256(a):
+	k = 0
+	len = 128
+	N = 256
+	while len > 0:
+		start = 0
+		while start < N:
+			k = k+1;
+			zeta = psi_512_rev[k]
+			for j in range(start,start+len):
+				t = (zeta * a[j + len])%q
+				a[j + len] = (a[j] - t)%q
+				a[j] = (a[j] + t)%q
+			start = start + 2*len
+		len >>= 1
 
 def INTT_sb_256(a):
 	t = 1
@@ -178,8 +199,15 @@ def schoolbook_mult(a, b):
 # sanity checking
 
 N = 256
-a = [randint(0,q-1) for _ in range(N)]
-b = [randint(0,q-1) for _ in range(N)]
+a = [random.randint(0,q-1) for _ in range(N)]
+b = [random.randint(0,q-1) for _ in range(N)]
+
+c = a.copy()
+
+NTT_256(a)
+NTT_sb_256(c)
+
+print("Sanity check :", a == c)
 
 c = schoolbook_mult(a, b)
 FastMul_256(a,b)
