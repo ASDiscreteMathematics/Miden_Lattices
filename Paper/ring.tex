@@ -1,7 +1,7 @@
 %!TeX root=miden_lattices.tex
 \section{Fast arithmetic in cyclotomic rings}
 
-\subsubsection{Parameter sets}
+\subsection{Parameter sets}
 
 The lattice based schemes Kyber, Saber, Falcon and Dilithium, which are all finalists in the NIST pqcrypto standardization
 effort (and many other schemes), all rely on arithmetic in cyclotomic rings of the form
@@ -23,7 +23,7 @@ In Miden, the native modulus is $p = 2^{64} - 2^{32} + 1$, so $\Z_q$ in this cas
 of order $2^{32}$ and in particular of order $2^k$ for any $k = 1, \ldots, 32$, and we therefore get native
 arithmetic in $R_{p,n}$ for all such $n = 2^k$.
 
-\subsubsection{Bound on the size of $q$}
+\subsection{Bound on the size of $q$}
 
 Since the $q$ used in the above schemes is different from the native $p$, we first need to give a bound for
 the maximum modulus size $q$ for each ring $R_{q,n}$ such that we can recover the product exactly (using 
@@ -51,7 +51,7 @@ $1024$ &   26.5 \\
 \end{tabular}
 \end{center}
 
-\subsubsection{Lazy reduction} In the schemes that use a module structure such as Kyber, Saber and Dilithium, 
+\subsection{Lazy reduction} In the schemes that use a module structure such as Kyber, Saber and Dilithium, 
 one often has to compute 
 a matrix vector product $\bA \cdot \bv$ where the matrix and vector contain elements of $R_{q,n}$.
 Assuming that the matrix has $\ell$ columns, we therefore could add $\ell$ such products together before
@@ -61,7 +61,7 @@ is $7$ in the case of Dilithium level 5 parameter set.  It is easy to verify tha
 $p > 7 \cdot 2 \cdot 256 \cdot q^2$, so we can indeed postpone the final reduction after the addition 
 of the $\ell$ products.
 
-\subsubsection{Multiplication using NTT}
+\subsection{Multiplication using NTT}
 
 Let $N$ be a power of $2$ and assume that $q-1 \equiv 0 \bmod 2N$, and let $\psi$ be a primitive $2N$-th root 
 of unity and $\omega = \psi^2$ a primitive $N$-th root of unity.  The $N$-point NTT of a sequence 
@@ -122,7 +122,7 @@ so we could use the standard NTT above on the scaled polynomial $a(\psi x)$, and
 This requires scaling of $a(x), b(x)$ and an inverse scaling of $c(\psi x)$, where the latter could be 
 combined with the scaling by $N$ in the final step of the INTT.
 
-\subsubsection{Optimizing the NTT}
+\subsection{Optimizing the NTT}
 
 To optimize the NTT, it is possible to absorb the scaling by $\psi$ and also to work around 
 the BitReverse as is done in \cite{longa}.  In the forward NTT, the function will return a $\psi$-scaled NTT
@@ -220,13 +220,13 @@ additions/subtractions.  This should be compared to the $N^2$ multiplications an
 Example: for $N = 256$ we thus require 3328 multiplications modulo $q$ and 6144 additions modulo $q$ compared to the 
 65536 multiplications/additions for the schoolbook approach.
 
-\subsubsection{NTT for $4$-element word arrays}
+\subsection{NTT for $4$-element word arrays}
 
 In Miden VM, a word consists of $4$ field elements and the RAM is word-addressable so we can read/write 4 field
 elements in one cycle.  As such, it is interesting to develop an NTT routine which takes into account the word-addressable
 memory.   We see two possibilities depending on the application:
 
-\noindent \textbf{4 parallel NTTs}
+\subsubsection{4 parallel NTTs}
 
 In many cases, e.g.\ in Dilithium, more than one NTT is required to be executed at the same time, e.g.\
 in Dilithium, we require $k + \ell$ NTTs and $k$ INTTs for $(k,\ell) = (4,4), (6,5), (8,7)$, so we can 
@@ -235,10 +235,12 @@ easily execute $4$ NTTs in parallel.
 The idea is simply to take the 4 input $N$-vectors and pack them columwise in the $4$ element words, i.e.\
 the $N$ words consist of 
 \[ [A[k], B[k], C[k], D[k]] \]
-where $A,B,C,D$ are the $4$ input vectors.    Algorithm~\ref{} remains exactly the same, with the assumption that
+where $A,B,C,D$ are the $4$ input vectors.    Algorithm~\ref{algo:ntt_sb} remains exactly the same, with the assumption that
 all operations are now executed in a SIMD fashion.
 
-\noindent \textbf{Single NTT for $4$-element word arrays}
+\textbf{Example}: For $N = 256$ this would result in $2048$ reads and $2048$ writes of a word, $2048$ SIMD-adds and $1024$ SIMD-muls.
+
+\subsubsection{Single NTT for $4$-element word arrays}
 
 Inspired by the $2$-element word memory in~\cite{}, we extend this method to $4$ element words, by packing 
 two consecutive words in the $2$-element array into one $4$-element word.
@@ -258,7 +260,30 @@ the same word, i.e.\ in every iteration the elements saved will be of the form
 The result is summarized in Algorithm~\ref{algo:ntt4_sb}.  Note that the input has to be formatted as above, 
 but that the output is a linearly organized array of quadruples of the bitreversed result, i.e.\ if 
 $B$ would be the output of $NTT_{sb}$, then the output of $NTT4_{sb}$ simply is 
-\[ [B[4k], B[4k+1], B[4k+2], B[4k+3]] \]
+\[ [B[4k], B[4k+1], B[4k+2], B[4k+3]] \, . \]
+
+A similar approach can be taken for the inverse NTT, see e.g.\ \texttt{ntt\_4\_256.py} in the Code subdirectory.
+
+\textbf{Example}: We obtain the following numbers for the NTT, where adds and muls refer to single adds and muls (not SIMD versions).
+The inverse NTT requires an extra $N$ Reads and Writes and Muls if the scaling by $N$ is not folded into the final iteration
+of the main loop.
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+N & Reads & Writes &  Muls & Adds \\
+\hline
+256 & 512 & 512 & 1024 & 2048   \\
+512 & 1152 & 1152 & 2304  & 4608 \\
+1024 & 2560 & 2560 &  5120 & 10240 \\
+\hline
+\end{tabular}
+\end{center}
+
+A savings of $N/4$ reads and writes can be obtained by combining the $len=2$ and $len=1$ loops in
+Algorithm~\ref{algo:ntt4_sb}.
+If a single butterfly is implemented in 1 Miden cycle, then the total number of cycles equals Reads + Writes + Muls, 
+since there are Muls butterflies, which also equals the number of Adds.
+
 
 \begin{algorithm}[!t] \label{algo:ntt4_sb}
 \begin{scriptsize}

@@ -69,6 +69,7 @@ def NTT_256(a):
 	k = 0
 	len = 128
 	N = 256
+	
 	while len > 0:
 		start = 0
 		while start < N:
@@ -114,6 +115,7 @@ def NTT_4_256(a):
 	k = 0
 	len = 128
 	N = 256
+
 	while len > 2:
 		start = 0
 		while start < (N>>2):
@@ -152,7 +154,6 @@ def NTT_4_256(a):
 		zeta = psi_512_rev[k]  
 		t2 = (zeta * A1[3])%q
 		a[j] = [(A1[0] + t1)%q, (A1[0] - t1)%q, (A1[2] + t2)%q, (A1[2] - t2)%q]
-		
 
 
 # 4 element version
