@@ -214,7 +214,7 @@ The function $NTT_{sb}$ uses $(N/2) \log_2(N)$ multiplications modulo $q$ and a 
 Due to the final scaling, the function $INTT_{sb}$ requires $(N/2) \log_2(N) + N$ multiplications modulo $q$ and 
 $N \log_2(N)$ additions/subtractions modulo $q$.
 
-A polynomial product in $\Z_q[x]/(x^N+1)$ therefore requires $(3N/2) \log_2(N) + N$ multiplications and $3 N \log_2(N)$ 
+A polynomial product in $\Z_q[x]/(x^N+1)$ therefore requires $(3N/2) \log_2(N) + 2N$ multiplications and $3 N \log_2(N)$ 
 additions/subtractions.  This should be compared to the $N^2$ multiplications and additions required for schoolbook multiplication.
 
 Example: for $N = 256$ we thus require 3328 multiplications modulo $q$ and 6144 additions modulo $q$ compared to the 
@@ -360,6 +360,115 @@ $k = 0$
 }
 \end{scriptsize}
 \end{algorithm} 
+
+\subsection{Arithmetic in cyclotomic rings defined by $\Phi_{3^2 \cdot 2^k}$}
+
+To accomodate all parameter sets for the IMLWE based systems akin to Threebears, we will require arithmetic 
+in $R_{p, 9, n} = \Z_q[x] / (x^{3n} - x^{3n/2} + 1)$ where $n = 2^k$ and $p = 2^64 - 2^32 + 1$ is the Miden native modulus.  
+In particular, we will be interested  in the case $n = 64$ and $n = 128$.
+
+By definition, $\Phi_{3^2 \cdot 2^k} = x^{3 2^k}  - x^{3 2^{k-1}} + 1$, has as its roots the primitive $9 n$-th roots of unity, 
+of which there are $\varphi(9 n) = 3 n$.  However, for our choice of $p$, we only have primitive $3 n$-th roots of unity, since $3 | p-1$, 
+but not $9 | p-1$, of which there are $n$.
+
+Let $\zeta_3 = 4294967295$, and denote with $\zeta_{n}$ a fixed primitive $2^k$ root of unity (which will be specified later
+for $n = 64$ we take $\zeta_n = 8$ and for $n = 128$ we take $\zeta_n ...$), then we can order all primitive $3 n$-th roots of unity as 
+\[   [\zeta_3 \zeta_{n}^{2j+1}]_{j = 0, \ldots, n/2-1} \cup [ \zeta_3^{-1} \zeta_{n}^{2j+1}]_{j = 0, \ldots, n/2-1}  \, . \]
+
+The arithmetic in $R_{p, 9, n}$ decomposes using CRT into the product of rings
+\[  R_{p, 9, n} = \prod_{i}^{n} (\Z_q[x] / (x^3 - r_i))  \,  \]
+where $r_i$ is the $i$-th primitive $3 n$-th root of unity according to the above ordering.
+To compute this representation, it suffices to compute $g(x) \bmod (x^3 - r_i)$ for all $r_i$, 
+where $g(x)$ is a polynomial of degree $< 3n$.  Write $g(x) = \sum_{j = 0}^{3n-1} g_i x^i$, 
+and decompose $g(x)$ as 
+\[  g(x) = G_0(x^3) + x G_1(x^3) + x^2 G_2(x^3) , \]
+where the $G_i(x)$ are polynomials of degree $<n$, 
+then it is clear that 
+\[ g(x) \bmod (x^3 - r_i) = G_0(r_i) + x G_1(r_i) + x^2 G_2(r_i) \, ,  \]
+so the mapping to the product representation corresponds to $3$ 
+evaluations of degree $<n$ polynomials in the $3n$-th primitive roots of unity.
+
+Let $G(x)$ denote such polynomial, then to evaluate $G(x)$ in $\zeta_3^{\pm} \zeta_n^{2j+1}$ say, 
+it suffices to evaluate $H(x)_{\pm} = G(\zeta_3^\pm x)$ in the $n/2$ primitive $n$-th roots of unity for which we 
+can use the NTT derived in the previous sections.  Computing $H(x)$ requires $2/3n$ multiplications.
+Note that $H(x)$ has degree $<n$, but we only evaluate it in primitive $n$-th roots of unity, so we are 
+essentially looking at $H(x) \bmod (x^{n/2} + 1)$.  So by folding $H(x)$ in half, we thus have 
+reduced the problem to evaluation a degree $n/2$ polynomial in the primitive $n$-th roots of unity.
+
+So overall, mapping a polynomial $g(x)$ to the product representation requires:
+\bit
+\item splitting $g(x)$ in 3 parts
+\item for each part, computing $H_1(x) = g(\zeta_3 x) \bmod (x^n/2+1)$ and $H_2(x) = g(\zeta_3^2 x) \bmod (x^n/2 + 1)$ 
+which requires $4/3n$ multipilications and $n$ additions
+\item for each degree $n/2$ polynomial (there are 6 of them in total), perform an NTT costing $n/4 \log_2(n/2)$ multiplications and $n/2 \log_2(n/2)$
+additions
+\eit
+resulting in a total of 
+\[  4n + 6n/4 \log_2(n/2) \text{ multipications  and } 3 n (\log_2(n/2 + 1)) \text{ additions } \, .   \]
+
+To derive the inverse transformation, it clearly suffices to recover $G(x)$ from its evaluations
+$G(r_i)$ in the primitive $3n$-th roots of unity.  Recall that these come in two sets, 
+one corresponding to $\zeta_3 \zeta_n^{2j+1}$ and one corresponding to $\zeta_3^{-1} \zeta_n^{2j+1}$.
+Using the inverse NTT we can recover the polynomials 
+\[ H(x)_+ = G(\zeta_3 x) \bmod (x^{n/2} + 1) \text{ and } H(x)_- = G(\zeta_3^{-1} x) \bmod (x^{n/2} + 1) \, .  \]
+Note that in terms of the original coefficients $G_k$, the $j$-th coefficient of $H(x)_+$ and $H(x)_-$ are given by
+\[  H_{+,j} = G_j \zeta_3^j - G_{n/2+j} \zeta_3^{(n/2+j)} \quad \text{and} \quad   H_{-,j} = G_j \zeta_3^{-j} - G_{(n/2+j)} \zeta_3^{-(n/2+j)}  \, , \]
+so we can recover 
+\[
+G_j = \zeta_3^{-j} (1 - \zeta_3^{n})^{-1} \cdot  (H_{+, j} - \zeta_3^{(n+2j)} H_{_,j}) \quad 
+G_{n/2 + j} = \zeta_3^{n/2+j} (\zeta_3^{-j} G_j - H_{-,j})  \, . 
+\]
+The total cost of the inverse transformation therefore is:
+\bit
+\item 6 inverse NTTs of length $n/2$ costing $n/4 \log_2(n/2) + n/2$ multiplications and $n/2 \log_2(n/2)$ additions
+\item 3 recombinations to derive the polynomials $G_0, G_1, G_2$, each recombination costing
+\[  2n \text{ multiplications  and } n \text{ additions }   , \]
+\eit
+for a total cost of 
+\[   3n/2 \log_2(n/2) + 9n  \text{ multiplications and } 3n (\log_2(n/2) + 1) \text{ additions } \, .\]
+
+Example: the above costs should be compared with an embedding strategy where the polynomial 
+is embedded in the ring modulo $x^{4n}+1$, which allows to recover the product exactly as well.
+For $n = 64$ we get for the native forward mapping above a total of 732 multiplications vs.\ 2304
+for the embedding in the degree 512 ring.  For the inverse mapping we obtain 1056 multiplications vs. \ 
+2816 mulitplications for the embedding strategy.
+
+To use the above transformations, we are left with multiplication in the rings $\Z_q[x]/(x^3 - r_i)$.  Given
+two elements $a(x) = a_0 + a_1 x + a_2 x^2$ and $b(x) = b_0 + b_1 x + b_2 x^2$, we could compute 
+the product using Toom-Cook in 5 multiplications, but the interpolation step requires division by $6$
+which would amount to a multiplication or to a seperate routine executing division by 3 and a shift.
+To avoid this, we use a two step Karatsuba multiply:
+\bit
+\item Compute $c_0 = a_0b_0$, $c_1 = a_1 b_1$, $c_2 = a_2 b_2$
+\item Compute $d_0 = (a_0 + a_1) (b_0 + b_1)$ and $d_1 = (a_1 + a_2)(b_1 + b_2)$ and $d_2 = (a_0 + a_1 + a_2)(b_0 + b_1 + b_2)$
+\eit
+The the product polynomial is given by:
+\[
+[c_0,  d_0 - c_0 - c_1,   d_2 - d_0 - d_1 + 2c_1,    d_1 - c_1 - c_2,   c_2] \, .
+\]
+These formulae need 6 multiplications and 14 additions to compute the product.  
+Of course, we still have to reduce mod
+$x^3 - r_i$, which gives another 2 multiplications and 2 additions, so a total of 8 multiplications and 16 additions.
+
+To multiply two elements in the ring $R_{p, 9, n}$ we therefore require:
+\bit
+\item Two mappings to the product ring, which constists of $n$ rings of degree $3$
+\item $n$ multiplications of degree 2 elements in such rings, totalling $8n$ mults and $16n$ additions
+\item One inverse mapping to the polynomial ring
+\eit
+The overall cost therefore is:
+\[   25n + 9n/2 \log_2(n/2) \text{ multiplications and }    6n \log_2(n/2) + 22 n \text{ additions } \, .   \]
+Using the embedding strategy in the ring of dimension $4n$ would give
+\[  64n + 12n \log_2(n/2) \text{ multiplications and }  12n \log_2(n/2) + 36n \text{ additions } \, . \]
+
+Example: for $n = 64$ we thus obtain 3032 multiplications vs.\ 7936 multiplications for the embedding strategy.
+
+
+
+
+
+
+
 
 
 
