@@ -23,7 +23,7 @@ class NoiseDistributionWithOverflow:
         dictionary = dict()
         for n in range(lenconv):
             index = n - (lenconv-1)/2
-            if index < -cutoff_point or index > cutoff_point:
+            if index < -self.cutoff_point or index > self.cutoff_point:
                 continue
             dictionary[index] = conv[n]
 
