@@ -1,7 +1,7 @@
 %!TeX root=miden_lattices.tex
 \section{Fast arithmetic in cyclotomic rings}
 
-\subsection{Parameter sets}
+\subsection{Non-native parameter sets}
 
 The lattice based schemes Kyber, Saber, Falcon and Dilithium, which are all finalists in the NIST pqcrypto standardization
 effort (and many other schemes), all rely on arithmetic in cyclotomic rings of the form
@@ -463,12 +463,28 @@ Using the embedding strategy in the ring of dimension $4n$ would give
 
 Example: for $n = 64$ we thus obtain 3032 multiplications vs.\ 7936 multiplications for the embedding strategy.
 
+\subsection{Native parameter sets}
 
+For the public key encryption and publicly re-randomizable commitment schemes we rely on arithmetic in a ring that is natively compatible with the prime $p = 2^{64} - 2^{32} + 1$, meaning that there is no need for additional modular reduction. This ring, which is inspired by the ThreeBears NIST standardization candidate~\cite{}, is defined as 
+$$ R_p = \frac{\mathbb{Z}_p[X]}{(X^n+1)} $$
+but embeds a lattice of dimension $4n$ through the packing scheme
+$$ \mathbb{Z}_p = \frac{\mathbb{Z}[Y]}{(Y^4 - Y^2 + 1, Y-2^{16})} \enspace .$$
 
+Multiplication in this ring can be achieved using NTTs of dimension $n$. Elements of this ring are short if the balanced expansion base $2^{16}$ of its coefficients are short. Specifically, if $a, b, c, d$ are small  (in absolute value) integers, then $a + b \cdot 2^{16} + c \cdot 2^{32} + d \cdot 2^{48}$ is a small element of $\mathbb{Z}_p$, and when the all the coefficients of a polynomial $f(X) \in R_p$ have this form then it is short.
 
+More concretely, we use the centered binomial distribution $\Xi$ with bounds $-8$ and $8$ (both inclusive) and standard deviation $\sigma = 2$. Sampling short polynomials consists of sampling four integers from $\Xi$ for each coefficient.
 
+On top of the ring structure we use the module approach with dimension $m$. So specifically, there is an $m \times m$ matrix, along with $m \times 1$ and $1 \times m$ vectors whose elements belong to $R_p$. The parameter $m$ depends on the security level.
 
-
+\begin{table}
+\centering
+\begin{tabular}{c|c}
+sec. lvl & $m$ \\ \hline
+$128$ & $3$ \\
+$192$ & $4$ \\
+$256$ & $6$
+\end{tabular}
+\end{table}
 
 
 
