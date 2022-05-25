@@ -12,7 +12,7 @@ class Pke:
         if G != None:
             self.G = G
         else:
-            self.G = [[Pke.sample_random_polynomial() for i in range(self.module_dimension)] for j in range(self.module_dimension)]
+            self.G = [[sample_random_polynomial() for i in range(self.module_dimension)] for j in range(self.module_dimension)]
 
     def KeyGen(self):
         # sample secret key, which consists of two short elements
@@ -37,10 +37,10 @@ class Pke:
         embedding = embed_msg(msg)
 
         # compute noisy Diffie-Hellman value
-        K = [0] * self.ring_dimension
+        K = [0] * 64
         for i in range(self.module_dimension):
-            product = mul(pk[i], c[i])
-            for j in range(self.ring_dimension):
+            product = ring_mul(pk[i], c[i])
+            for j in range(64):
                 K[j] += product[j]
             K[i] += embedding[i]
 
@@ -51,13 +51,26 @@ class Pke:
         B, C = ctxt
 
         # compute noisy Diffie-Hellman value and cancel it
-        K = [0] * self.ring_dimension
+        K = [0] * 64
         for i in range(self.module_dimension):
-            product = mul(B[i], s[i])
-            for j in range(self.ring_dimension):
+            product = ring_mul(B[i], s[i])
+            for j in range(64):
                 K[j] += product[j]
             K[i] = C[i] - K[i]
 
         # extract message
         return extract_msg(K)
+
+def test_pke():
+    sec_lvls = [128]#, 192, 256]
+    for sec_lvl in sec_lvls:
+        scheme = Pke(sec_lvl)
+        sk, pk = scheme.KeyGen()
+        msg = [int(os.urandom(1)[0]) % 2 for i in range(256)]
+        ctxt = scheme.Enc(pk, msg)
+        dec = scheme.Dec(sk, ctxt)
+        print(msg[:10])
+        print(dec[:10])
+        assert(dec == msg), "Fail"
+    return True
 
