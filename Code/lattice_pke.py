@@ -37,11 +37,10 @@ class Pke:
         embedding = embed_msg(msg)
 
         # compute noisy Diffie-Hellman value
-        K = [0] * 64
-        for i in range(self.module_dimension):
-            product = ring_mul(pk[i], c[i])
-            for j in range(64):
-                K[j] += product[j]
+        K = map_inner_product(pk, c)
+
+        # add embedding of message
+        for i in range(64):
             K[i] += embedding[i]
 
         return B, K
@@ -50,12 +49,11 @@ class Pke:
         s, e = sk
         B, C = ctxt
 
-        # compute noisy Diffie-Hellman value and cancel it
-        K = [0] * 64
-        for i in range(self.module_dimension):
-            product = ring_mul(B[i], s[i])
-            for j in range(64):
-                K[j] += product[j]
+        # compute noisy Diffie-Hellman value
+        K = map_inner_product(s, B)
+       
+        # cancel it from the second ciphertext coordinate 
+        for i in range(64):
             K[i] = C[i] - K[i]
 
         # extract message
@@ -69,8 +67,6 @@ def test_pke():
         msg = [int(os.urandom(1)[0]) % 2 for i in range(256)]
         ctxt = scheme.Enc(pk, msg)
         dec = scheme.Dec(sk, ctxt)
-        print(msg[:10])
-        print(dec[:10])
         assert(dec == msg), "Fail"
     return True
 
