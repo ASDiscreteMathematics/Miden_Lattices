@@ -55,12 +55,12 @@ def ring_mul(lhs, rhs):
 def ring_add(lhs, rhs):
     return [(l+r) % ((1<<64) - (1<<32) + 1) for (l, r) in zip(lhs, rhs)]
 
-def sample_random_field_element():
-    integer = sum((1 << 8*i) * int(os.urandom(1)[0]) for i in range(9))
+def sample_random_field_element(randomness):
+    integer = sum((1 << 8*i) * int(randomness[i]) for i in range(9))
     return integer % ((1 << 64) - (1 << 32) + 1) # not perfectly uniform, but that's okay
 
-def sample_random_polynomial():
-    return [sample_random_field_element() for i in range(64)]
+def sample_random_polynomial(randomness):
+    return [sample_random_field_element(randomness[i*9:(i+1)*9]) for i in range(64)]
 
 def num_set_bits(integer):
     num_set_bits = 0
@@ -70,11 +70,11 @@ def num_set_bits(integer):
         num_set_bits += 1
     return num_set_bits
 
-def sample_short_field_element():
-    return sum((1 << (16*i)) * (num_set_bits(os.urandom(1)[0]) - num_set_bits(os.urandom(1)[0])) for i in range(4))
+def sample_short_field_element(randomness):
+    return sum((1 << (16*i)) * (num_set_bits(randomness[0]) - num_set_bits(randomness[1])) for i in range(4))
 
-def sample_short_polynomial():
-    return [sample_short_field_element() for i in range(64)]
+def sample_short_polynomial(randomness):
+    return [sample_short_field_element(randomness[2*i:2*(i+1)]) for i in range(64)]
 
 def map_right(G, a, b):
     module_dimension = len(G)
@@ -200,8 +200,8 @@ def test_ring_mul():
     return True
 
 def test_ring_commutativity():
-    a = sample_random_polynomial()
-    b = sample_random_polynomial()
+    a = sample_random_polynomial(os.urandom(9*64))
+    b = sample_random_polynomial(os.urandom(9*64))
     a = list(range(5)) + [0]*59
     b = list(range(7)) + [0]*57
     ab = ring_mul(a,b)
@@ -210,9 +210,9 @@ def test_ring_commutativity():
     return True
 
 def test_ring_associativity():
-    a = sample_random_polynomial()
-    b = sample_random_polynomial()
-    c = sample_random_polynomial()
+    a = sample_random_polynomial(os.urandom(9*64))
+    b = sample_random_polynomial(os.urandom(9*64))
+    c = sample_random_polynomial(os.urandom(9*64))
 
     a = list(range(10)) + [0]*54
     b = list(reversed(range(5))) + [0]*59
@@ -228,9 +228,9 @@ def test_ring_associativity():
 
 def test_map_associativity():
     dimension = 4
-    G = [[sample_random_polynomial() for j in range(dimension)] for i in range(dimension)]
-    a = [sample_random_polynomial() for i in range(dimension)]
-    b = [sample_random_polynomial() for i in range(dimension)]
+    G = [[sample_random_polynomial(os.urandom(9*64)) for j in range(dimension)] for i in range(dimension)]
+    a = [sample_random_polynomial(os.urandom(9*64)) for i in range(dimension)]
+    b = [sample_random_polynomial(os.urandom(9*64)) for i in range(dimension)]
 
     zeros = [[0]*64]*dimension
 

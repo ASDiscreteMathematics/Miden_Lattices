@@ -1,4 +1,5 @@
 from lattice_operations import *
+import os
 
 class Pke:
     def __init__(self, security_level, G=None):
@@ -12,12 +13,19 @@ class Pke:
         if G != None:
             self.G = G
         else:
-            self.G = [[sample_random_polynomial() for i in range(self.module_dimension)] for j in range(self.module_dimension)]
+            M = self.module_dimension
+            randomness = os.urandom(9*64*M*M)
+            randomness_chunks = [randomness[i*9*64:(i+1)*9*64] for i in range(M*M)]
+            self.G = [[sample_random_polynomial(randomness_chunks[j*M+i]) for i in range(M)] for j in range(M)]
 
     def KeyGen(self):
+        # get randomness
+        randomness = os.urandom(2*self.module_dimension*64 * 2)
+        randomness_chunks = [randomness[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
+
         # sample secret key, which consists of two short elements
-        s = [sample_short_polynomial() for i in range(self.module_dimension)]
-        e = [sample_short_polynomial() for i in range(self.module_dimension)]
+        s = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension)]
+        e = [sample_short_polynomial(randomness_chunks[len(randomness_chunks)//2 + i]) for i in range(self.module_dimension)]
 
         # compute matching public key
         A = map_right(self.G, s, e)
@@ -25,9 +33,14 @@ class Pke:
         return (s,e), A
 
     def Enc(self, pk, msg):
-        # sample ephemeral key which consists of two short elements
-        c = [sample_short_polynomial() for i in range(self.module_dimension)]
-        d = [sample_short_polynomial() for i in range(self.module_dimension)]
+        # get randomness
+        randomness = os.urandom(2*self.module_dimension*64 * 2)
+        randomness_chunks = [randomness[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
+
+
+        # sample ephemeral key, which consists of two short elements
+        c = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension)]
+        d = [sample_short_polynomial(randomness_chunks[len(randomness_chunks)//2 + i]) for i in range(self.module_dimension)]
 
         # compute matching Diffie-Hellman contribution
         B = map_left(self.G, c, d)
