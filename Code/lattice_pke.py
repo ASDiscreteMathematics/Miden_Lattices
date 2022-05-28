@@ -73,7 +73,7 @@ class Pke:
         return extract_msg(K)
 
 def test_pke():
-    sec_lvls = [128]#, 192, 256]
+    sec_lvls = [128, 192, 256]
     for sec_lvl in sec_lvls:
         scheme = Pke(sec_lvl)
         sk, pk = scheme.KeyGen()
