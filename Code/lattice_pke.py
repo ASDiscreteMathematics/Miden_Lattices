@@ -72,6 +72,13 @@ class Pke:
         # extract message
         return extract_msg(K)
 
+    def HomomorphicAdd(self, ctxt_left, ctxt_right):
+        B_left, K_left = ctxt_left
+        B_right, K_right = ctxt_right
+        B = [[(B_left[i][j] + B_right[i][j]) % ((1 << 64) - (1 << 32) + 1) for j in range(64)] for i in range(self.module_dimension)]
+        K = [(K_left[j] + K_right[j]) % ((1 << 64) - (1 << 32) + 1) for j in range(64)]
+        return B, K
+
 def test_pke():
     sec_lvls = [128, 192, 256]
     for sec_lvl in sec_lvls:
@@ -79,6 +86,21 @@ def test_pke():
         sk, pk = scheme.KeyGen()
         msg = [int(os.urandom(1)[0]) % 2 for i in range(256)]
         ctxt = scheme.Enc(pk, msg)
+        dec = scheme.Dec(sk, ctxt)
+        assert(dec == msg), "Fail"
+    return True
+
+def test_hom_add():
+    sec_lvls = [128, 192, 256]
+    for sec_lvl in sec_lvls:
+        scheme = Pke(sec_lvl)
+        sk, pk = scheme.KeyGen()
+        msg1 = [int(os.urandom(1)[0]) % 2 for i in range(256)]
+        msg2 = [int(os.urandom(1)[0]) % 2 for i in range(256)]
+        msg = [(msg1[i] + msg2[i]) % 2 for i in range(256)]
+        ctxt1 = scheme.Enc(pk, msg1)
+        ctxt2 = scheme.Enc(pk, msg2)
+        ctxt = scheme.HomomorphicAdd(ctxt1, ctxt2)
         dec = scheme.Dec(sk, ctxt)
         assert(dec == msg), "Fail"
     return True
