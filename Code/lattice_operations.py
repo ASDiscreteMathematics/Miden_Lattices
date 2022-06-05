@@ -1,4 +1,5 @@
 import os
+import ntt_4_64
 
 def ntt(array, root):
     if len(array) == 1:
@@ -16,6 +17,12 @@ def ntt(array, root):
     return ret
 
 def ring_mul(lhs, rhs):
+    lhs_copy = [l for l in lhs]
+    rhs_copy = [r for r in rhs]
+    ntt_4_64.FastMul_64(lhs_copy, rhs_copy)
+    return lhs_copy
+
+def ring_mul_(lhs, rhs):
     # copy lhs and rhs
     # otherwise python will mutate in-place
     lhs = lhs[:]
