@@ -114,6 +114,34 @@ def map_inner_product(vector, a):
         s = ring_add(s, prod)
     return s
 
+def map_right_had(G, a, b):
+    module_dimension = len(G)
+    v = [[0] * 64] * module_dimension
+    for i in range(module_dimension):
+        for j in range(module_dimension):
+            prod = ring_had(G[i][j][:], a[j][:])
+            v[i] = ring_add(v[i], prod)
+        v[i] = ring_add(v[i], b[i])
+    return v
+
+def map_left_had(G, a, b):
+    module_dimension = len(G[0])
+    v = [[0] * 64] * module_dimension
+    for i in range(module_dimension):
+        for j in range(module_dimension):
+            prod = ring_had(a[j], G[j][i])
+            v[i] = ring_add(v[i], prod)
+        v[i] = ring_add(v[i], b[i])
+    return v
+
+def map_inner_product_had(vector, a):
+    s = [0] * 64
+    module_dimension = len(a)
+    for i in range(module_dimension):
+        prod = ring_had(vector[i][:], a[i][:])
+        s = ring_add(s, prod)
+    return s
+
 def embed_msg(msg):
     assert(all(m == 0 or m == 1 for m in msg))
     embedding = [0]*(len(msg)//4)
