@@ -62,6 +62,9 @@ def ring_mul_(lhs, rhs):
 def ring_add(lhs, rhs):
     return [(l+r) % ((1<<64) - (1<<32) + 1) for (l, r) in zip(lhs, rhs)]
 
+def ring_had(lhs, rhs):
+    return [(l*r) % ((1<<64) - (1<<32) + 1) for (l, r) in zip(lhs, rhs)]
+
 def sample_random_field_element(randomness):
     integer = sum((1 << 8*i) * int(randomness[i]) for i in range(9))
     return integer % ((1 << 64) - (1 << 32) + 1) # not perfectly uniform, but that's okay
