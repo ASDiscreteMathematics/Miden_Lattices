@@ -55,7 +55,7 @@ class NaivePke:
 
         # add embedding of message
         for i in range(64):
-            K[i] += embedding[i]
+            K[i] = (K[i] + embedding[i]) % ((1<<64) - (1<<32) + 1)
 
         return B, K
 
@@ -68,7 +68,7 @@ class NaivePke:
        
         # cancel it from the second ciphertext coordinate 
         for i in range(64):
-            K[i] = C[i] - K[i]
+            K[i] = (C[i] - K[i]) % ((1<<64) - (1<<32) + 1)
 
         # extract message
         return extract_msg(K)
@@ -153,7 +153,7 @@ class OptimizedPke:
 
         # add embedding of message
         for i in range(64):
-            Kf[i] += embeddingf[i]
+            Kf[i] = (Kf[i] + embeddingf[i]) % ((1<<64) - (1<<32) + 1)
 
         return Bf, Kf
 
@@ -166,7 +166,7 @@ class OptimizedPke:
        
         # cancel it from the second ciphertext coordinate 
         for i in range(64):
-            Kf[i] = Cf[i] - Kf[i]
+            Kf[i] = (Cf[i] - Kf[i]) % ((1<<64) - (1<<32) + 1)
 
 
         # map to time domain
