@@ -105,11 +105,11 @@ class OptimizedRcs:
             M = self.module_dimension
             randomness = os.urandom(9*64*M*M)
             randomness_chunks = [randomness[i*9*64:(i+1)*9*64] for i in range(M*M)]
-            self.G = [[sample_random_polynomial(randomness_chunks[j*M+i]) for i in range(M)] for j in range(M)]
-            self.Gf = [[gg for gg in g] for g in self.G]
-            for g in self.Gf:
+            self.Gf = [[sample_random_polynomial(randomness_chunks[j*M+i]) for i in range(M)] for j in range(M)]
+            self.G = [[gg for gg in g] for g in self.Gf]
+            for g in self.G:
                 for gg in g:
-                    ntt_4_64.NTT_64(gg)
+                    ntt_4_64.iNTT_64(gg)
 
     def Commit(self, message):
         # seed PRNG with message and expand into enough bytes
