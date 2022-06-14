@@ -1,3 +1,165 @@
 %!TeX root=miden_lattices.tex
+
 \section{Post-quantum encryption}
- 
+
+This section specifies a public key encyption scheme over the native finite field $\mathbb{Z}_p$. 
+
+\subsection{Basic Description}
+
+The scheme employs matrix multiplications where the matrix algebra is defined relative to the base ring $R_p = \frac{\mathbb{Z}_p[X]}{(X^n + 1)}$ where $n=64$. The elements of this base ring are polynomials, and so the elements of the matrices and vectors are polynomials. However, the fact that they are polynomials is only relevant to define the multiplication law, which can be computed using the fast NTT-based algorithm described in \S~\ref{section:multiplication-using-ntt}. (The addition law is trivially element-wise addition.) It is natural and fitting to represent these polynomials as vectors of $n=64$ field elements.
+
+Let $\mathbf{G} \in R_p^{m \times m}$ be an arbitrary matrix, and let $\mathbf{a}, \mathbf{b}, \mathbf{c}, \mathbf{d} \in R_p^{m \times 1}$ be vectors of short polynomials. The encryption scheme builds on the following noisy Diffie-Hellman protocol:
+\begin{itemize}
+\item The square matrix $\mathbf{G}$ is a public parameter known to both Alice and Bob.
+\item Alice samples $\mathbf{a}, \mathbf{b}$, computes $\mathbf{A} = \mathbf{G} \mathbf{a} + \mathbf{b}$, and sends $\mathbf{A}$ to Bob.
+\item Bob samples $\mathbf{c}, \mathbf{d}$, computes $\mathbf{B} = \mathbf{G}^\mathsf{T} \mathbf{c} + \mathbf{d}$, and sends $\mathbf{B}$ to Alice.
+\item Alice receives $\mathbf{B}$ from Bob and computes $K_A = \mathbf{a}^\mathsf{T} \mathbf{B}$.
+\item Bob receives $\mathbf{A}$ from Alice and computes $K_B = \mathbf{c}^\mathsf{T} \mathbf{A}$.
+\end{itemize}
+Alice's view $K_A$ and Bob's view $K_B$ of the shared secret key are close in the following sense. The difference $K_A - K_B = \mathbf{a}^\mathsf{T} \mathbf{d} - \mathbf{b}^\mathsf{T} \mathbf{c}$ is \emph{short} -- every coefficient of this polynomial has a balanced base-$2^{16}$ expansion with a small $\ell_2$-norm. Specifically, the variance of this $\ell_2$-norm is $\sigma^2 \cdot \sqrt{8mn}$, where $\sigma=2$ is the standard deviation in the distribution $\Xi$ of \S~\ref{section:native-parameter-sets}. For reference, for the worst case parameter set this value is roughly 222 whereas for \emph{random} field elements it is roughly $\sqrt{\frac{2^{32}-1}{12}} \approx 18919$. Therefore, with high likelihood Alice and Bob will agree about the top bit of all these 16-bit chunks. 
+
+The encryption scheme embeds the message in the top bit of each 16-bit chunk, and pads the resulting embedding with the noise shared one-time pad. With high likelihood, the noise does not disturb the message.
+
+\subsection{Naive Scheme}
+
+In more detail, the public key encryption scheme consists of the following objects.
+\begin{itemize}
+ \item The matrix $\mathbf{G} \in R_p^{m \times m}$ is a public parameter.
+ \item A secret key is a pair of short vectors $\mathbf{a}, \mathbf{b} \in R_p^{m \times 1}$.
+ \item A public key is single vector $\mathbf{A} \in R_p^{m \times 1}$.
+ \item A message is a list of 256 bits $m \in \{0,1\}^{256}$.
+ \item A ciphertext is a pair $(\mathbf{B}, C) \in R_p^{m \times 1} \times R_p$.
+\end{itemize}
+
+We start by defining a functionality that encryption and decryption relies on, namely the embedding and extraction of a message $m \in \{0,1\}^{256}$ into the top bits of 16-bit chunks of a polynomial $f \in R_p$.
+
+\begin{algorithm}[!t] \label{algo:tb4-embed-msg}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{embed\_msg}$}}
+\KwIn{a message $m \in \{0,1\}^{256}$}
+\KwOut{a polynomial $M \in R_p$}
+\Begin{
+\everypar={\nl}
+\textbf{return} {$[\sum_{i=0}^3 2^{16i+15} \cdot m[i+4j] : 0 \leq j < 64]$}
+}
+\end{scriptsize}
+\end{algorithm} 
+\begin{algorithm}[!t] \label{algo:tb4-extract-msg}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{embed\_msg}$}}
+\KwIn{a polynomial $M \in R_p$}
+\KwOut{a message $m \in \{0,1\}^{256}$}
+\Begin{
+\everypar={\nl}
+$\mathit{chunks} \leftarrow []$
+
+\For{$c \in M$}{
+	\For{$i \in \{0,3\}$}{
+		$\mathit{chunks} \leftarrow \mathit{chunks} \Vert (c \gg 16i) \mathtt{\&} \mathtt{0xffff}$
+	}
+}
+
+\textbf{return} {$[[\![c \geq 2^{14} \, \wedge \, 2^{16}-c \geq 2^{14} ]\!] : c \in \mathit{chunks}]$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+The following algorithms specify the public key encryption scheme. Note that the operations $+$ and $\times$ apply to vectors of 64 field elements. Specifically, these operations compute addition and multiplication in the ring $R_p$. This corresponds to element-wise addition and multiplication of polynomials followed by reduction modulo $X^{64}-1$.
+
+\begin{algorithm}[!t] \label{algo:tb4-keygen-naive}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{KeyGen}$}}
+\KwIn{}
+\KwOut{a secret key $\mathit{sk}$ and public key $\mathit{pk}$}
+\Begin{
+\everypar={\nl}
+$\mathbf{a} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathbf{b} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+// compute Alice's Diffie-Hellman contribution
+
+$\mathbf{A} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{G}[i][j] \times \mathbf{a}[j]$
+	}
+	$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{b}[i]$
+}
+
+\textbf{return} {$\mathit{sk} = (\mathbf{a}, \mathbf{b})$, $\mathit{pk} = \mathbf{A}$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-enc-naive}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{Enc}$}}
+\KwIn{a public key $\mathit{pk} = \mathbf{A}$, a message $m \in \{0,1\}^{256}$}
+\KwOut{a ciphertext $\mathit{ctxt} = (\mathbf{B}, C)$}
+\Begin{
+\everypar={\nl}
+$\mathbf{c} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathbf{d} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+// compute Bob's Diffie-Hellman contribution
+
+$\mathbf{B} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{B}[i] \leftarrow \mathbf{B}[i] + \mathbf{G}[j][i] \times \mathbf{c}[j]$
+	}
+	$\mathbf{B}[i] \leftarrow \mathbf{B}[i] + \mathbf{d}[i]$
+}
+
+// compute shared noisy one-time pad
+
+$K \leftarrow [0 : 0 \leq i < 64]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	$K \leftarrow K + \mathbf{c}[i] \times \mathbf{A}[i]$
+}
+
+// pad message
+
+$C \leftarrow K + \mathsf{embed\_msg}(m)$
+
+\textbf{return} {$\mathit{ctxt} = (\mathbf{B}, C)$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-dec-naive}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{Dec}$}}
+\KwIn{a secret key $\mathit{sk} = (\mathbf{a}, \mathbf{b})$, a ciphertext $\mathit{ctxt} = (\mathbf{B}, C)$}
+\KwOut{a message $m \in \{0, 1\}^{256}$}
+\Begin{
+\everypar={\nl}
+
+// compute shared noisy one-time pad
+
+$K \leftarrow [0 : 0 \leq i < 64]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	$K \leftarrow K + \mathbf{B}[i] \times \mathbf{a}[i]$
+}
+
+// unpad message
+
+$M \leftarrow C - K$
+
+\textbf{return} {$\mathsf{extract\_msg}(M)$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\subsection{Security and Failure Probability}
+
+\subsection{Homomorphisms}
+
+\subsection{Optimized Scheme}
+

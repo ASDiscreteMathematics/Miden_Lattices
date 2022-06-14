@@ -64,6 +64,7 @@ $p > 7 \cdot 2 \cdot 256 \cdot q^2$, so we can indeed postpone the final reducti
 of the $\ell$ products.
 
 \subsection{Multiplication using NTT}
+\label{section:multiplication-using-ntt}
 
 Let $N$ be a power of $2$ and assume that $q-1 \equiv 0 \bmod 2N$, and let $\psi$ be a primitive $2N$-th root 
 of unity and $\omega = \psi^2$ a primitive $N$-th root of unity.  The $N$-point NTT of a sequence 
@@ -244,7 +245,7 @@ all operations are now executed in a SIMD fashion.
 
 \subsubsection{Single NTT for $4$-element word arrays}
 
-Inspired by the $2$-element word memory in~\cite{}, we extend this method to $4$ element words, by packing 
+Inspired by the $2$-element word memory in~\cite{}\todo{insert citation}, we extend this method to $4$ element words, by packing 
 two consecutive words in the $2$-element array into one $4$-element word.
 
 In particular, we simple store 4 consecutive elements in a logical array as a 4-element word.
@@ -468,27 +469,70 @@ Example: for $n = 64$ we thus obtain 3032 multiplications vs.\ 7936 multiplicati
 \end{comment}
 
 \subsection{Native parameter sets}
+\label{section:native-parameter-sets}
 
-For the public key encryption and publicly re-randomizable commitment schemes we rely on arithmetic in a ring that is natively compatible with the prime $p = 2^{64} - 2^{32} + 1$, meaning that there is no need for additional modular reduction. This ring, which is inspired by the ThreeBears NIST standardization candidate~\cite{}, is defined as 
+For the public key encryption and publicly re-randomizable commitment schemes we rely on arithmetic in a ring that is natively compatible with the prime $p = 2^{64} - 2^{32} + 1$, meaning that there is no need for additional modular reduction. This ring, which is inspired by the ThreeBears NIST standardization candidate~\cite{threebears}, is defined as 
 $$ R_p = \frac{\mathbb{Z}_p[X]}{(X^n+1)} $$
 but embeds a lattice of dimension $4n$ through the packing scheme
 $$ \mathbb{Z}_p = \frac{\mathbb{Z}[Y]}{(Y^4 - Y^2 + 1, Y-2^{16})} \enspace .$$
 
 Multiplication in this ring can be achieved using NTTs of dimension $n$. Elements of this ring are short if the balanced expansion base $2^{16}$ of its coefficients are short. Specifically, if $a, b, c, d$ are small  (in absolute value) integers, then $a + b \cdot 2^{16} + c \cdot 2^{32} + d \cdot 2^{48}$ is a small element of $\mathbb{Z}_p$, and when the all the coefficients of a polynomial $f(X) \in R_p$ have this form then it is short.
 
-More concretely, we use the centered binomial distribution $\Xi$ with bounds $-8$ and $8$ (both inclusive) and standard deviation $\sigma = 2$. Sampling short polynomials consists of sampling four integers from $\Xi$ for each coefficient.
+More concretely, we use the centered binomial distribution $\Xi$ with bounds $-8$ and $8$ (both inclusive) and standard deviation $\sigma = 2$. However, $\Xi$ is a distribution of small integers; we also need field elements whose 16-bit chunks are distributed according to $\Xi$. To this end, define the distribution $\Upsilon = \sum_{i=0}^{3} \xi_i 2^{16i}$ with $\xi_i \sim \Xi$. Algorithms~\ref{algo:sample_small_integer} and~\ref{algo:sample_short_field_element} specify one way to sample these distributions. Sampling short polynomials consists of sampling a coefficient vector of length 64 whose elements are distributed according to $\Upsilon$.
+
+
+\begin{algorithm}[!t] \label{algo:sample_small_integer}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{sample\_small\_integer}$}}
+\KwIn{}
+\KwOut{an integer distributed according to $\Xi$}
+\Begin{
+\everypar={\nl}
+$\mathit{bits} \xleftarrow{\$} \mathbb{Z}/2^{16}\mathbb{Z}$ // 16 random bits
+
+$\mathit{num\_set} \leftarrow 0$
+
+\While{$\mathit{bits} \neq 0$}{
+  $\mathit{bits} \leftarrow \mathit{bits} \mathtt{\&} (\mathit{bits} - 1)$ // bitwise and
+  
+  $\mathit{num\_set} \leftarrow \mathit{num\_set} + 1$
+}
+
+\textbf{return} {$\mathit{num\_set} - 8$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:sample_short_field_element}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{sample\_short\_field\_element}$}}
+\KwIn{}
+\KwOut{a field element distributed according to $\Upsilon$}
+\Begin{
+\everypar={\nl}
+$\mathit{acc} \leftarrow 0$ 
+
+\For{$i \in \{0, \ldots, 3\}$}{
+  $\xi \leftarrow \mathsf{sample\_small\_integer}()$
+  
+  $\mathit{acc} \leftarrow \mathit{acc} \cdot 2^{16} + \xi$
+}
+
+\textbf{return} {$\mathit{acc}$}
+}
+\end{scriptsize}
+\end{algorithm} 
 
 On top of the ring structure we use the module approach with dimension $m$. So specifically, there is an $m \times m$ matrix, along with $m \times 1$ and $1 \times m$ vectors whose elements belong to $R_p$. The parameter $m$ depends on the security level.
 
-\begin{table}
-\centering
+\begin{center}
 \begin{tabular}{c|c}
 sec. lvl & $m$ \\ \hline
 $128$ & $3$ \\
 $192$ & $4$ \\
 $256$ & $6$
 \end{tabular}
-\end{table}
+\end{center}
 
 
 
