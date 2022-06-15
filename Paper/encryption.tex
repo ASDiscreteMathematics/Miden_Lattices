@@ -51,15 +51,25 @@ We start by defining a functionality that encryption and decryption relies on, n
 \KwOut{a message $m \in \{0,1\}^{256}$}
 \Begin{
 \everypar={\nl}
-$\mathit{chunks} \leftarrow []$
+
+$m \leftarrow []$
 
 \For{$c \in M$}{
 	\For{$i \in \{0,3\}$}{
-		$\mathit{chunks} \leftarrow \mathit{chunks} \Vert (c \gg 16i) \mathtt{\&} \mathtt{0xffff}$
+		$\mathit{chunk} \leftarrow c \mathtt{\&} \mathtt{0xffff}$
+		
+		$c \leftarrow c \gg 16$
+		
+		\If{$\mathit{chunk} < 2^{14} \vee 2^{16}-\mathit{chunk} < 2^{14}$}{
+			$m \leftarrow m \Vert 0$
+		}
+		\Else{
+			$m \leftarrow m \Vert 1$
+		}
 	}
 }
 
-\textbf{return} {$[[\![c \geq 2^{14} \, \wedge \, 2^{16}-c \geq 2^{14} ]\!] : c \in \mathit{chunks}]$}
+\textbf{return} {$m$}
 }
 \end{scriptsize}
 \end{algorithm} 
@@ -117,7 +127,7 @@ $\mathbf{B} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
 
 // compute shared noisy one-time pad
 
-$K \leftarrow [0 : 0 \leq i < 64]$
+$K \leftarrow [\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64]$
 
 \For{$i \in \{0, \ldots, m-1\}$}{
 	$K \leftarrow K + \mathbf{c}[i] \times \mathbf{A}[i]$
@@ -157,9 +167,138 @@ $M \leftarrow C - K$
 \end{scriptsize}
 \end{algorithm} 
 
-\subsection{Security and Failure Probability}
+\subsection{Optimized Scheme}
+
+The strategy to compute multiplications in the polynomial quotient ring $R_p$ by using NTTs followed by INTTs is redundant because almost all INTT maps at the end of one operation are follwed up with an NTT map preparing for the next operation. It pays to represent the polynomials in frequency domain. The time domain representation is only necessary when sampling small elements and when decoding the message. This observation gives rise to the equivalent public key encryption scheme specified by Algorithms~\ref{algo:tb4-keygen-optimized}-\ref{algo:tb4-enc-optimized}-\ref{algo:tb4-dec-optimized}. Note that the secret key, public key, and ciphertext are now represented in frequency domain. We use $\circ$ to denote the Hadamard (element-wise) product.
+
+\begin{algorithm}[!t] \label{algo:tb4-keygen-optimized}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{KeyGen}$ \textit{(optimized)}}}
+\KwIn{}
+\KwOut{a secret key $\mathit{sk}$ and public key $\mathit{pk}$, both represented in frequency domain}
+\Begin{
+\everypar={\nl}
+$\mathbf{a} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathsf{NTT}_{\it sb}(\mathbf{a})$
+
+$\mathbf{b} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathsf{NTT}_{\it sb}(\mathbf{b})$
+
+// compute Alice's Diffie-Hellman contribution
+
+$\mathbf{A} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{G}[i][j] \circ \mathbf{a}[j]$
+	}
+	$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{b}[i]$
+}
+
+\textbf{return} {$\mathit{sk} = (\mathbf{a}, \mathbf{b})$, $\mathit{pk} = \mathbf{A}$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-enc-optimized}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{Enc}$} \textit{(optimized)}}
+\KwIn{a public key $\mathit{pk} = \mathbf{A}$ represented in frequency domain, a message $m \in \{0,1\}^{256}$}
+\KwOut{a ciphertext $\mathit{ctxt} = (\mathbf{B}, C)$ represented in frequency domain}
+\Begin{
+\everypar={\nl}
+$\mathbf{c} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathsf{NTT}_{\it sb}(\mathbf{c})$
+
+$\mathbf{d} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathsf{NTT}_{\it sb}(\mathbf{d})$
+
+// compute Bob's Diffie-Hellman contribution
+
+$\mathbf{B} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{B}[i] \leftarrow \mathbf{B}[i] + \mathbf{G}[j][i] \circ \mathbf{c}[j]$
+	}
+	$\mathbf{B}[i] \leftarrow \mathbf{B}[i] + \mathbf{d}[i]$
+}
+
+// compute shared noisy one-time pad
+
+$K \leftarrow [\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64]$
+
+$\mathsf{NTT}_{\it sb}(K)$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	$K \leftarrow K + \mathbf{c}[i] \circ \mathbf{A}[i]$
+}
+
+// embed and pad message
+
+$M \leftarrow \mathsf{embed\_msg}(m)$
+
+$\mathsf{NTT}_{\it sb}(M)$
+
+$C \leftarrow K + M$
+
+\textbf{return} {$\mathit{ctxt} = (\mathbf{B}, C)$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-dec-optimized}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{Dec}$} \textit{(optimized)}}
+\KwIn{a secret key $\mathit{sk} = (\mathbf{a}, \mathbf{b})$, a ciphertext $\mathit{ctxt} = (\mathbf{B}, C)$ all represented in frequency domain}
+\KwOut{a message $m \in \{0, 1\}^{256}$}
+\Begin{
+\everypar={\nl}
+
+// compute shared noisy one-time pad
+
+$K \leftarrow [0 : 0 \leq i < 64]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	$K \leftarrow K + \mathbf{B}[i] \times \mathbf{a}[i]$
+}
+
+// unpad, intt, and extract message
+
+$M \leftarrow C - K$
+
+$\mathsf{INTT}_{\sf sb}(M)$
+
+\textbf{return} {$\mathsf{extract\_msg}(M)$}
+}
+\end{scriptsize}
+\end{algorithm}
+
+\subsection{Security, Parameters, and Failure Probability}
+
+The encryption scheme is $\mathsf{IND-CPA}$-secure under assumed hardness of a specific member of the decisional Ideal LWE class of problems as described by Bootland \emph{et al.}~\cite{BootlandCSV21}. This specific member is defined below.
+
+\vspace{0.25cm}
+
+\textbf{Hard Problem.} Let $R_p$ and $\Upsilon$ be defined as in \S~\ref{section:native-parameter-sets}. Let $k, l, m$ be small integers. The IMLWE$^*_{k,l,m}$ is to distinguish the distribution (1) from the distribution (2) given the sample $(\mathbf{A}, \mathbf{B}) \in R_p^{k \times l} \times R_p^{k \times m}$ where
+\begin{itemize}
+\item[(1)] $\mathbf{A}$ is uniformly random and $\mathbf{B} = \mathbf{A} \mathbf{c} + \mathbf{d}$ for some matrices $\mathbf{c} \sim \Upsilon^{l \times m}$ and $\mathbf{d} \sim \Upsilon^{k \times m}$;
+\item[(2)] $\mathbf{A}$ and $\mathbf{B}$ are uniformly random.
+\end{itemize}
+
+\vspace{0.25cm}
+
+The security reduction constructs a IMLWE solver from a $\mathsf{IND-CPA}$ adversary $\mathcal{A}$. The reduction proceeds in two steps.
+
+In the first step, $\mathcal{A}$ is used to solve a Diffie-Hellman-like problem, where the task is to distinguish the distribution (1) $(\mathbf{G}, \mathbf{A}, \mathbf{B}, K)$ from (2) $(\mathbf{G}, \mathbf{A}, \mathbf{B}, U)$, where all symbols match with their use in the specification of the encryption scheme and where $U \sim \mathcal{U}(R_p)$. In fact, this step is trivial. Supply the adversary with the public parameter $\mathbf{G}$, the public key $\mathbf{A}$, and the ciphertext $(\mathbf{B}, C)$ were $C$ was constructed according to the last lines of $\mathsf{Enc}$. If $\mathcal{A}$ correctly identifies which message was encrypted, then the fourth element of the tuple is not uniform. Conversely, if $\mathcal{A}$'s can do no better than guess at random then the fourth element must be uniform.
+
+In the second step, a solver for this Diffie-Hellman-like problem is used to build one for IMLWE$^*_{m, 1, 1}$. This step is analogous to \S~5.5 of Frodo~\cite{frodo}.
+
+To estimate the hardness of IMLWE$^*_{m, 1, 1}$ we use the tools of Albrecht~\emph{et al.}~\cite{} and Ducas~\emph{et al.}~\cite{}. While these tools estimate the hardness of standard LWE instances of dimension $N$, we argue that they apply also to IMLWE$^*_{m,1,1}$ with $N = 4 m n$, where the factor 4 arises from the integer packing scheme pressing 4 integers into every field element, and the factor $n$ arises from the ring $R_p$.
 
 \subsection{Homomorphisms}
-
-\subsection{Optimized Scheme}
 
