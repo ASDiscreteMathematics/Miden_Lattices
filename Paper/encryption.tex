@@ -298,7 +298,11 @@ In the first step, $\mathcal{A}$ is used to solve a Diffie-Hellman-like problem,
 
 In the second step, a solver for this Diffie-Hellman-like problem is used to build one for IMLWE$^*_{m, 1, 1}$. This step is analogous to \S~5.5 of Frodo~\cite{frodo}.
 
-To estimate the hardness of IMLWE$^*_{m, 1, 1}$ we use the tools of Albrecht~\emph{et al.}~\cite{} and Ducas~\emph{et al.}~\cite{}. While these tools estimate the hardness of standard LWE instances of dimension $N$, we argue that they apply also to IMLWE$^*_{m,1,1}$ with $N = 4 m n$, where the factor 4 arises from the integer packing scheme pressing 4 integers into every field element, and the factor $n$ arises from the ring $R_p$.
+To estimate the hardness of IMLWE$^*_{m, 1, 1}$ we use the tools of Albrecht~\emph{et al.}~\cite{albrecht-estimator} and Ducas~\emph{et al.}~\cite{ducas-estimator}. While these tools estimate the hardness of standard LWE instances of dimension $N$, we argue that they apply also to IMLWE$^*_{m,1,1}$ with $N = 4 m n$, where the factor 4 arises from the integer packing scheme pressing 4 integers into every field element, and the factor $n$ arises from the ring $R_p$.
+
+The aptitude of these estimators warrants a note of caution. The estimators work for a generic $q$-ary lattice. However, the lattice induced by IMLWE$^*_{m,1,1}$ is not $q$-ary and has abundant structure corresponding the algebra over which multiplication is defined. Nevertheless, inspection of the generating matrix shows that the lattice in question is \emph{very close} to $q$-ary. Moreover, the same estimators are used to estimate the hardness of the \emph{structured} lattice problems underlying Ring- and Module-based lattice cryptosystems. Neither of these caveats are known to give rise to exploitable attacks or even different attack complexity.
+
+
 
 \subsection{Homomorphisms}
 
