@@ -1,3 +1,26 @@
 %!TeX root=miden_lattices.tex
 \section{Post-quantum commitments}
- 
+
+This section specifies a publicly rerandomizable commitment scheme over the native finite field $\mathbb{Z}_p$. A basic commitment scheme consists of two functions:
+\begin{itemize}
+ \item $\mathsf{commit}$, takes a message and some randomness and outputs a \emph{commitment} along with some \emph{decommitment information}.
+ \item $\mathsf{verify}$, takes a commitment, a message, decommitment information, and outputs a bit indicating whether the commitment is valid.
+\end{itemize}
+
+A commitment scheme is \emph{publicly rerandomizable} when third parties can derive a new commitment so that:
+\begin{itemize}
+\item[a)] The new commitment is unlinkable to the original commitment except by the party that produced the original commitment or the party derived the new one.
+\item[b)] The party that produced the original commitment can open the new one as well as the old one, but only to the same message.
+\end{itemize}
+
+We build this functionality using the ring $R_p = \frac{\mathbb{Z}_p}{\langle X^n + 1\rangle}$ and associated tools as follows. Let $\mathbf{G} \in R_p^{m \times m}$ be an arbitrary $m \times m$ matrix consisting of polynomials, and let $\mathbf{a}, \mathbf{b}, \mathbf{c}, \mathbf{d} \in R_p^{m \times 1}$ be vectors of short polynomials, and $e \in R_p$ a single short polynomial. Then $(\mathbf{G}, \mathbf{a}^\mathsf{T} \mathbf{G} + \mathbf{b}^\mathsf{T})$ is one LWE sample, and $(\mathbf{G}\mathbf{c} + \mathbf{d}, \mathbf{a}^\mathsf{T} \mathbf{G} \mathbf{c} + \mathbf{b}^\mathsf{T} \mathbf{c} + e)$ is another. Both LWE samples commit to $\mathbf{a}$, in the sense that it is a short approximate solution, and that such solutions are difficult to find. This observation gives rise to the following scheme:
+\begin{itemize}
+\item The matrix $\mathbf{G} \in R_p^{m \times m}$ is a public parameter.
+\item Cory the committer feeds the message $m \in \{0,1\}^*$ into a pseudorandom number generator and uses it to sample $\mathbf{a}$ and $\mathbf{b}$.
+\item Cory computes the commitment as $\mathbf{a}^\mathsf{T} \mathbf{G} + \mathbf{b}^\mathsf{T}$.
+\item Rachel the rerandomizer samples $\mathbf{c}, \mathbf{d}, e$ and computes the re-randomized commitment as $(\mathbf{G}\mathbf{c} + \mathbf{d}, \mathbf{a}^\mathsf{T} \mathbf{G} \mathbf{c} + \mathbf{b}^\mathsf{T} \mathbf{c} + e)$.
+\item To open a commitment, Cory supplies $m$. From this message, $\mathbf{a}$ can be determined, and it can be verified to be a short approximate solution to the matching LWE sample.
+\end{itemize}
+
+\subsection{Formal Algorithms}
+

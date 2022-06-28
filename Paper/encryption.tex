@@ -46,7 +46,7 @@ We start by defining a functionality that encryption and decryption relies on, n
 \end{algorithm} 
 \begin{algorithm}[!t] \label{algo:tb4-extract-msg}
 \begin{scriptsize}
-\caption{\emph{$\mathsf{embed\_msg}$}}
+\caption{\emph{$\mathsf{extract\_msg}$}}
 \KwIn{a polynomial $M \in R_p$}
 \KwOut{a message $m \in \{0,1\}^{256}$}
 \Begin{
@@ -278,7 +278,7 @@ $\mathsf{INTT}_{\sf sb}(M)$
 \end{scriptsize}
 \end{algorithm}
 
-\subsection{Security, Parameters, and Failure Probability}
+\subsection{Security, Parameters}
 
 The encryption scheme is $\mathsf{IND-CPA}$-secure under assumed hardness of a specific member of the decisional Ideal LWE class of problems as described by Bootland \emph{et al.}~\cite{BootlandCSV21}. This specific member is defined below.
 
@@ -300,9 +300,28 @@ In the second step, a solver for this Diffie-Hellman-like problem is used to bui
 
 To estimate the hardness of IMLWE$^*_{m, 1, 1}$ we use the tools of Albrecht~\emph{et al.}~\cite{albrecht-estimator} and Ducas~\emph{et al.}~\cite{ducas-estimator}. While these tools estimate the hardness of standard LWE instances of dimension $N$, we argue that they apply also to IMLWE$^*_{m,1,1}$ with $N = 4 m n$, where the factor 4 arises from the integer packing scheme pressing 4 integers into every field element, and the factor $n$ arises from the ring $R_p$.
 
-The aptitude of these estimators warrants a note of caution. The estimators work for a generic $q$-ary lattice. However, the lattice induced by IMLWE$^*_{m,1,1}$ is not $q$-ary and has abundant structure corresponding the algebra over which multiplication is defined. Nevertheless, inspection of the generating matrix shows that the lattice in question is \emph{very close} to $q$-ary. Moreover, the same estimators are used to estimate the hardness of the \emph{structured} lattice problems underlying Ring- and Module-based lattice cryptosystems. Neither of these caveats are known to give rise to exploitable attacks or even different attack complexity.
+The aptitude of these estimators warrants a note of caution. The estimators work for a generic $q$-ary lattice. However, the lattice induced by IMLWE$^*_{m,1,1}$ is not $q$-ary and has abundant structure corresponding the algebra over which multiplication is defined. Nevertheless, inspection of the generating matrix shows that the lattice in question is \emph{very close} to $q$-ary, with $q = 2^{16}$. Moreover, the same estimators are used to estimate the hardness of the \emph{structured} (thus not generic) lattice problems underlying Ring- and Module-based lattice cryptosystems. Neither of these caveats are known to give rise to exploitable attacks or even different attack complexity.
 
+\begin{table}
+\centering
+\begin{tabular}{c||c|c|c}
+$m$ & Albrech~\emph{et al.} & Ducas~\emph{et al.} & failure probability \\ \hline
+3 & 148.9 & 135.3 & $< 2^{-995\phantom{\vert}}$ \\
+4 & 211.7 & 192.2 & $\sim 2^{-725}$ \\
+6 & 263.5 & 310.8 & $\sim 2^{-331}$
+\end{tabular}
+\end{table}
 
+\subsection{Homomorphisms and Failure Probability}
 
-\subsection{Homomorphisms}
+The encryption scheme admits two homomorphic operations. First, addition of ciphertexts corresponds to addition of plaintexts modulo 2. Second, multiplication by \emph{sufficiently short} elements of $R_p$ affects the underlying plaintexts in the same way. Both operations can lead to a decryption failure, even if the operand ciphertexts do not, although this event happens with small probability.
+
+To compute an approximation of the probability of decryption failure after any number of homomorphic operations, it is necessary to represent various distributions on a single packed integer. To make this calculation feasible, it is advisable to restrict distributions to the range $[-2^{14},2^{14}]$ by truncation. The probability of decryption failure corresponds to the distance between 1 and the sum of all probabilities of integers in this range. Starting from the distribution of small integers $\Xi$, this distribution evolves as follows.
+\begin{itemize}
+\item Multiplication of integers corresponds to convolution of their probability distributions.
+\item Multiplication of field elements gives rise to at least one packed integer consisting of the sum of 8 products of original packed integers.
+\item Multiplication of polynomials in $R_p$ generates a polynomial where each coefficient consists of the sum of two products of field elements.
+\item Multiplication of an $l \times m$ matrix of polynomials by an $m \times 1$ vector of polynomials generates an $l \times 1$ vector where each coordinate consists of the sum of $m$ products of polynomials.
+\end{itemize}
+It is feasible to apply the same homomorphic circuit to the distribution of small elements. The failure probability of decryption of the output ciphertexts is approximately the distance of the sum of this distribution from 1.
 
