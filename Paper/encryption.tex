@@ -180,11 +180,13 @@ The strategy to compute multiplications in the polynomial quotient ring $R_p$ by
 \everypar={\nl}
 $\mathbf{a} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
 
-$\mathsf{NTT}_{\it sb}(\mathbf{a})$
-
 $\mathbf{b} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
 
-$\mathsf{NTT}_{\it sb}(\mathbf{b})$
+\For{$0 \leq i < m$}{
+	$\mathsf{NTT}_{\it sb}(\mathbf{a}[i])$
+	
+	$\mathsf{NTT}_{\it sb}(\mathbf{b}[i])$
+}
 
 // compute Alice's Diffie-Hellman contribution
 
@@ -211,11 +213,14 @@ $\mathbf{A} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
 \everypar={\nl}
 $\mathbf{c} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
 
-$\mathsf{NTT}_{\it sb}(\mathbf{c})$
-
 $\mathbf{d} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
 
-$\mathsf{NTT}_{\it sb}(\mathbf{d})$
+
+\For{$0 \leq i < m$}{
+	$\mathsf{NTT}_{\it sb}(\mathbf{c}[i])$
+	
+	$\mathsf{NTT}_{\it sb}(\mathbf{d}[i])$
+}
 
 // compute Bob's Diffie-Hellman contribution
 
@@ -264,7 +269,7 @@ $C \leftarrow K + M$
 $K \leftarrow [0 : 0 \leq i < 64]$
 
 \For{$i \in \{0, \ldots, m-1\}$}{
-	$K \leftarrow K + \mathbf{B}[i] \times \mathbf{a}[i]$
+	$K \leftarrow K + \mathbf{B}[i] \circ \mathbf{a}[i]$
 }
 
 // unpad, intt, and extract message

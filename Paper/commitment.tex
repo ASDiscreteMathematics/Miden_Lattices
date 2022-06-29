@@ -22,5 +22,290 @@ We build this functionality using the ring $R_p = \frac{\mathbb{Z}_p}{\langle X^
 \item To open a commitment, Cory supplies $m$. From this message, $\mathbf{a}$ can be determined, and it can be verified to be a short approximate solution to the matching LWE sample.
 \end{itemize}
 
-\subsection{Formal Algorithms}
+\subsection{Naive Scheme}
 
+The scheme consists of four functions, relative to a message space $\mathcal{M}$ and randomness $\mathcal{R}$, the latter of which doubles as the space of decommitment information. The commitment has a different data structure before and after rerandomization: before it is $R_p^{1 \times m}$, whereas after it is $R_p^{m \times 1} \times R_p$.
+\begin{itemize}
+\item $\mathsf{Commit} : \mathcal{M} \times \mathcal{R} \rightarrow R_p^{1 \times m} \times \mathcal{R}$
+\item $\mathsf{VerifyRaw} : \mathcal{M} \times \mathcal{R} \times R_p^{\phantom{\vert}1 \times m} \rightarrow \{\mathsf{True},\mathsf{False}\}$
+\item $\mathsf{Rerandomize} : R_p^{1 \times m} \rightarrow (R_p^{\phantom{\vert}m \times 1} \times R_p)$
+\item $\mathsf{VerifyRerandomized} : \mathcal{M} \times \mathcal{R} \times (R_p^{\phantom{\vert}m \times 1} \times R_p) \rightarrow \{\mathsf{True},\mathsf{False}\}$
+\end{itemize}
+In addition to this interface we need a pseudorandom mapping from message-randomness pairs to a short vector of polynomials. We construct this manually, starting from an extendable output function (XOF) to sample uniform bytes, followed by sampler to send these uniform bytes to short polynomials. We overload the function $\mathsf{sample\_short\_field\_element}$ so that it can use the argument as random bits if it is supplied; otherwise the bits are sampled at random.
+\begin{itemize}
+\item $\mathsf{xof} : \mathcal{M} \times \mathcal{R} \times \mathbb{N} \rightarrow (\{0, 1\}^8)^*$
+\end{itemize}
+Lastly, we need a procedure to test whether a given polynomial is short enough. To this end we recycle the $\mathsf{extract\_msg}$ function. The polynomial is short enough if this function returns all zeros.
+
+\begin{algorithm}[!t] \label{algo:tb4-commit-naive}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{Commit}$}}
+\KwIn{a message $t \in \mathcal{M}$ and randomness $r \in \mathcal{R}$}
+\KwOut{a commitment $\mathbf{A} \in R_p^{1 \times m}$ and decommitment information}
+\Begin{
+\everypar={\nl}
+$\mathit{uniform\_bytes} \leftarrow \mathsf{xof}(t, r, 256 \cdot m)$
+
+$\mathit{ch} \leftarrow [\mathit{uniform\_bytes}[128 \cdot i : 128 \cdot (i+1)] : i \in \{0, \ldots, 2m-1\}]$
+
+$\mathbf{a} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathbf{b} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : m \leq j < 2m]$
+
+$\mathbf{A} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{G}[i][j] \times \mathbf{a}[j]$
+	}
+	$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{b}[i]$
+}
+
+\textbf{return} {$\mathit{commitment} = \mathbf{A}, \mathit{decommitment\_info} = r$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-verify-raw-naive}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{Verify}$}}
+\KwIn{a message $t \in \mathcal{M}$, decommitment information $r \in \mathcal{R}$, a commitment $\mathit{com} \in R_p^{1 \times m}$}
+\KwOut{$\mathsf{True}$ or $\mathsf{False}$}
+\Begin{
+\everypar={\nl}
+$\mathit{uniform\_bytes} \leftarrow \mathsf{xof}(t, r, 256 \cdot m)$
+
+$\mathit{ch} \leftarrow [\mathit{uniform\_bytes}[128 \cdot i : 128 \cdot (i+1)] : i \in \{0, \ldots, 2m-1\}]$
+
+$\mathbf{a} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathbf{b} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : m \leq j < 2m]$
+
+$\mathbf{A} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{G}[i][j] \times \mathbf{a}[j]$
+	}
+	$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{b}[i]$
+}
+
+\textbf{return} {$\mathit{com} \stackrel{?}{=} \mathbf{A}$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-rerandomize-naive}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{Rerandomize}$}}
+\KwIn{a commitment $\mathbf{A} \in R_p^{1 \times m}$}
+\KwOut{a rerandomized commitment $(\mathbf{B}, K) \in R_p^{m \times 1} \times R_p$}
+\Begin{
+\everypar={\nl}
+$\mathbf{c} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathbf{d} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : m \leq j < 2m]$
+
+$\mathbf{B} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{B}[i] \leftarrow \mathbf{B}[i] + \mathbf{G}[j][i] \times \mathbf{c}[j]$
+	}
+	$\mathbf{B}[i] \leftarrow \mathbf{B}[i] + \mathbf{d}[i]$
+}
+
+$e \leftarrow [\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64]$
+
+$K \leftarrow [0: 0 \leq i < 64]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$K \leftarrow K + \mathbf{A}[i] \times \mathbf{c}[i]$
+	}
+	$K \leftarrow K + e$
+}
+
+\textbf{return} {$\mathit{recom} = (\mathbf{B}, K)$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-verify-rerandomized-naive}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{VerifyRerandomized}$}}
+\KwIn{a message $t \in \mathcal{M}$, decommitment information $r \in \mathcal{R}$, and a rerandomized commitment $(\mathbf{B}, K) \in R_p^{m \times 1} \times R_p$}
+\KwOut{$\mathsf{True}$ or $\mathsf{False}$}
+\Begin{
+\everypar={\nl}
+
+$\mathit{uniform\_bytes} \leftarrow \mathsf{xof}(t, r, 256 \cdot m)$
+
+$\mathit{ch} \leftarrow [\mathit{uniform\_bytes}[128 \cdot i : 128 \cdot (i+1)] : i \in \{0, \ldots, 2m-1\}]$
+
+$\mathbf{a} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : 0 \leq j < m]$
+
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	$K \leftarrow K - \mathbf{a}[i] \times \mathbf{B}[i]$
+}
+
+\textbf{return} {$\mathsf{extract\_msg}(K) \stackrel{?}{=} 0^{256}$}
+}
+\end{scriptsize}
+\end{algorithm}
+
+\subsection{Optimized Scheme}
+
+Like in the case of the encryption scheme, a lot of cycles are wasted going to and from frequency domain just to compute a multiplication. It is better to represent the relevant objects in frequency domain and map them to and from time domain only when needed. Specifically, NTTs are necessary after sampling short elements, and INTTs before testing the lengths of elements. This observation gives rise to the optimized variant of the scheme, whose algorithms follow.
+
+
+\begin{algorithm}[!t] \label{algo:tb4-commit-optimized}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{Commit}$ (Optimized)}}
+\KwIn{a message $t \in \mathcal{M}$ and randomness $r \in \mathcal{R}$}
+\KwOut{a commitment $\mathbf{A} \in R_p^{1 \times m}$ and decommitment information}
+\Begin{
+\everypar={\nl}
+$\mathit{uniform\_bytes} \leftarrow \mathsf{xof}(t, r, 256 \cdot m)$
+
+$\mathit{ch} \leftarrow [\mathit{uniform\_bytes}[128 \cdot i : 128 \cdot (i+1)] : i \in \{0, \ldots, 2m-1\}]$
+
+$\mathbf{a} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$0 \leq i < m$}{
+	$\mathsf{NTT}_{\it sb}(\mathbf{a}[i])$
+}
+
+$\mathbf{b} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : m \leq j < 2m]$
+
+\For{$0 \leq i < m$}{
+	$\mathsf{NTT}_{\it sb}(\mathbf{b}[i])$
+}
+
+
+$\mathbf{A} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{G}[i][j] \circ \mathbf{a}[j]$
+	}
+	$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{b}[i]$
+}
+
+\textbf{return} {$\mathit{commitment} = \mathbf{A}, \mathit{decommitment\_info} = r$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-verify-raw-optimized}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{VerifyRaw}$ \textit{(Optimized)}}}
+\KwIn{a message $t \in \mathcal{M}$, decommitment information $r \in \mathcal{R}$, a commitment $\mathit{com} \in R_p^{1 \times m}$}
+\KwOut{$\mathsf{True}$ or $\mathsf{False}$}
+\Begin{
+\everypar={\nl}
+$\mathit{uniform\_bytes} \leftarrow \mathsf{xof}(t, r, 256 \cdot m)$
+
+$\mathit{ch} \leftarrow [\mathit{uniform\_bytes}[128 \cdot i : 128 \cdot (i+1)] : i \in \{0, \ldots, 2m-1\}]$
+
+$\mathbf{a} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : 0 \leq j < m]$
+
+
+
+$\mathbf{b} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : m \leq j < 2m]$
+
+\For{$0 \leq i < m$}{
+	$\mathsf{NTT}_{\it sb}(\mathbf{a}[i])$
+	
+	$\mathsf{NTT}_{\it sb}(\mathbf{b}[i])$
+}
+
+
+$\mathbf{A} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{G}[i][j] \circ \mathbf{a}[j]$
+	}
+	$\mathbf{A}[i] \leftarrow \mathbf{A}[i] + \mathbf{b}[i]$
+}
+
+\textbf{return} {$\mathit{com} \stackrel{?}{=} \mathbf{A}$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-rerandomize-optimized}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{Rerandomize}$ \textit{(Optimized)}}}
+\KwIn{a commitment $\mathbf{A} \in R_p^{1 \times m}$}
+\KwOut{a rerandomized commitment $(\mathbf{B}, K) \in R_p^{m \times 1} \times R_p$}
+\Begin{
+\everypar={\nl}
+$\mathbf{c} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : 0 \leq j < m]$
+
+$\mathbf{d} \leftarrow [[\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64] : m \leq j < 2m]$
+
+\For{$0 \leq i < m$}{
+	$\mathsf{NTT}_{\it sb}(\mathbf{c}[i])$
+	
+	$\mathsf{NTT}_{\it sb}(\mathbf{d}[i])$
+}
+
+
+$\mathbf{B} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$\mathbf{B}[i] \leftarrow \mathbf{B}[i] + \mathbf{G}[j][i] \circ \mathbf{c}[j]$
+	}
+	$\mathbf{B}[i] \leftarrow \mathbf{B}[i] + \mathbf{d}[i]$
+}
+
+$e \leftarrow [\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64]$
+
+$K \leftarrow [0: 0 \leq i < 64]$
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	\For{$j \in \{0, \ldots, m-1\}$}{
+		$K \leftarrow K + \mathbf{A}[i] \circ \mathbf{c}[i]$
+	}
+	$K \leftarrow K + e$
+}
+
+\textbf{return} {$\mathit{recom} = (\mathbf{B}, K)$}
+}
+\end{scriptsize}
+\end{algorithm} 
+
+\begin{algorithm}[!t] \label{algo:tb4-verify-rerandomized-optimized}
+\begin{scriptsize}
+\caption{\emph{$\mathsf{VerifyRerandomized}$ \textit{(Optimized)}}}
+\KwIn{a message $t \in \mathcal{M}$, decommitment information $r \in \mathcal{R}$, and a rerandomized commitment $(\mathbf{B}, K) \in R_p^{m \times 1} \times R_p$}
+\KwOut{$\mathsf{True}$ or $\mathsf{False}$}
+\Begin{
+\everypar={\nl}
+
+$\mathit{uniform\_bytes} \leftarrow \mathsf{xof}(t, r, 256 \cdot m)$
+
+$\mathit{ch} \leftarrow [\mathit{uniform\_bytes}[128 \cdot i : 128 \cdot (i+1)] : i \in \{0, \ldots, 2m-1\}]$
+
+$\mathbf{a} \leftarrow [[\mathsf{sample\_short\_field\_element}(\textit{ch}[128 j + 2i: 128 j + 2(i+1)]) : 0 \leq i < 64] : 0 \leq j < m]$
+
+\For{$0 \leq i < m$}{
+	$\mathsf{NTT}_{\it sb}(\mathbf{a}[i])$
+}
+
+\For{$i \in \{0, \ldots, m-1\}$}{
+	$K \leftarrow K - \mathbf{a}[i] \times \mathbf{B}[i]$
+}
+
+$\mathsf{INTT}_{\it sb}(K)$
+
+\textbf{return} {$\mathsf{extract\_msg}(K) \stackrel{?}{=} 0^{256}$}
+}
+\end{scriptsize}
+\end{algorithm}
+
+\subsection{Security, Parameters, and Failure Probability}
