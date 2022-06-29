@@ -1,5 +1,6 @@
 from lattice_operations import *
 from CompactFIPS202 import SHAKE256 as XOF
+import os
 
 # Re-randomizable Commitment Scheme
 class NaiveRcs:
@@ -20,27 +21,30 @@ class NaiveRcs:
             self.G = [[sample_random_polynomial(randomness_chunks[j*M+i]) for i in range(M)] for j in range(M)]
 
     def Commit(self, message):
-        # seed PRNG with message and expand into enough bytes
-        randomness = XOF(message, 2*64*self.module_dimension*2)
-        randomness_chunks = [randomness[2*64*i:2*64*(i+1)] for i in range(2*self.module_dimension)]
+        # sample randomness
+        randomness = os.urandom(32)
+
+        # seed PRNG with message||randomness and expand into enough bytes
+        uniform_bytes = XOF(message + randomness, 2*64*self.module_dimension*2)
+        uniform_chunks = [uniform_bytes[2*64*i:2*64*(i+1)] for i in range(2*self.module_dimension)]
 
         # sample secrets pseudorandomly
-        a = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension)]
-        b = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension, 2*self.module_dimension)]
+        a = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension)]
+        b = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension, 2*self.module_dimension)]
 
         # G*a + b
         A = map_right(self.G, a, b)
 
-        return A
+        return A, randomness
 
-    def VerifyRaw(self, commitment, message):
+    def VerifyRaw(self, message, randomness, commitment):
         # seed PRNG with message and expand into enough bytes
-        randomness = XOF(message, 2*64*self.module_dimension*2)
-        randomness_chunks = [randomness[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
+        uniform_bytes = XOF(message+randomness, 2*64*self.module_dimension*2)
+        uniform_chunks = [uniform_bytes[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
 
         # sample secrets pseudorandomly
-        a = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension)]
-        b = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension, 2*self.module_dimension)]
+        a = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension)]
+        b = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension, 2*self.module_dimension)]
         
         # G*a + b
         A = map_right(self.G, a, b)
@@ -63,14 +67,14 @@ class NaiveRcs:
 
         return B, C
 
-    def VerifyRerandomized(self, rerandomized_commitment, message):
+    def VerifyRerandomized(self, message, randomness, rerandomized_commitment):
         # seed PRNG with message and expand into enough bytes
-        randomness = XOF(message, 2*64*self.module_dimension*2)
-        randomness_chunks = [randomness[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
+        uniform_bytes = XOF(message + randomness, 2*64*self.module_dimension*2)
+        uniform_chunks = [uniform_bytes[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
 
         # sample secret (just the one) pseudorandomly
-        a = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension)]
-        a = [sample_short_polynomial(randomness[i*2*64:(i+1)*2*64]) for i in range(self.module_dimension)]
+        a = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension)]
+        #a = [sample_short_polynomial(randomness[i*2*64:(i+1)*2*64]) for i in range(self.module_dimension)]
         
         # parse
         B, C = rerandomized_commitment
@@ -112,13 +116,16 @@ class OptimizedRcs:
                     ntt_4_64.iNTT_64(gg)
 
     def Commit(self, message):
-        # seed PRNG with message and expand into enough bytes
-        randomness = XOF(message, 2*64*self.module_dimension*2)
-        randomness_chunks = [randomness[2*64*i:2*64*(i+1)] for i in range(2*self.module_dimension)]
+        # sample randomness
+        randomness = os.urandom(32)
+
+        # seed PRNG with message||randomness and expand into enough bytes
+        uniform_bytes = XOF(message + randomness, 2*64*self.module_dimension*2)
+        uniform_chunks = [uniform_bytes[2*64*i:2*64*(i+1)] for i in range(2*self.module_dimension)]
 
         # sample secrets pseudorandomly
-        af = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension)]
-        bf = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension, 2*self.module_dimension)]
+        af = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension)]
+        bf = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension, 2*self.module_dimension)]
 
         # map to frequency domain
         for i in range(self.module_dimension):
@@ -128,16 +135,16 @@ class OptimizedRcs:
         # G*a + b
         Af = map_right_had(self.Gf, af, bf)
 
-        return Af
+        return Af, randomness
 
-    def VerifyRaw(self, commitment, message):
+    def VerifyRaw(self, message, randomness, commitment):
         # seed PRNG with message and expand into enough bytes
-        randomness = XOF(message, 2*64*self.module_dimension*2)
-        randomness_chunks = [randomness[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
+        uniform_bytes = XOF(message + randomness, 2*64*self.module_dimension*2)
+        uniform_chunks = [uniform_bytes[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
 
         # sample secrets pseudorandomly
-        af = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension)]
-        bf = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension, 2*self.module_dimension)]
+        af = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension)]
+        bf = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension, 2*self.module_dimension)]
  
         # map to frequency domain
         for i in range(self.module_dimension):
@@ -170,19 +177,17 @@ class OptimizedRcs:
 
         return Bf, Cf
 
-    def VerifyRerandomized(self, rerandomized_commitment, message):
+    def VerifyRerandomized(self, message, randomness, rerandomized_commitment):
         # seed PRNG with message and expand into enough bytes
-        randomness = XOF(message, 2*64*self.module_dimension*2)
-        randomness_chunks = [randomness[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
+        uniform_bytes = XOF(message + randomness, 2*64*self.module_dimension*2)
+        uniform_chunks = [uniform_bytes[i*2*64:(i+1)*2*64] for i in range(2*self.module_dimension)]
 
         # sample secret (just the one) pseudorandomly
-        af = [sample_short_polynomial(randomness_chunks[i]) for i in range(self.module_dimension)]
-        #bf = [sample_short_polynomial(randomness[i*2*64:(i+1)*2*64]) for i in range(self.module_dimension)]
+        af = [sample_short_polynomial(uniform_chunks[i]) for i in range(self.module_dimension)]
 
         # map to frequency domain
         for i in range(self.module_dimension):
             ntt_4_64.NTT_64(af[i])
-            #ntt_4_64.NTT_64(bf[i])
         
         # parse
         Bf, Cf = rerandomized_commitment
@@ -210,11 +215,11 @@ def test_commitment():
         #scheme = NaiveRcs(sec_lvl)
         scheme = OptimizedRcs(sec_lvl)
         msg = os.urandom(16)
-        com = scheme.Commit(msg)
-        vfy = scheme.VerifyRaw(com, msg)
+        com, decom = scheme.Commit(msg)
+        vfy = scheme.VerifyRaw(msg, decom, com)
         assert(vfy), "Fail raw"
         rcom = scheme.Rerandomize(com)
-        rvfy = scheme.VerifyRerandomized(rcom, msg)
+        rvfy = scheme.VerifyRerandomized(msg, decom, rcom)
         assert(rvfy), "Fail rerandomized"
     return True
 
