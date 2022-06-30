@@ -212,8 +212,7 @@ $k = N$
 \end{algorithm} 
 
 To compute the product $c(x)$ of two polynomials in $a(x), b(x) \in \Z_q[x]/(x^N+1)$, we can now simply it as 
-\[  c(x) = INTT_{sb}(NTT_{sb}(a(x)) \circ NTT_{sb}(b(x)) \, , \]
-where $\circ$ denotes element-wise multiplication.
+\[  c(x) = INTT_{sb}(NTT_{sb}(a(x)) \cdot NTT_{sb}(b(x)) \, . \]
 
 The function $NTT_{sb}$ uses $(N/2) \log_2(N)$ multiplications modulo $q$ and a total of $N \log_2(N)$ additions/subtractions modulo $q$.
 Due to the final scaling, the function $INTT_{sb}$ requires $(N/2) \log_2(N) + N$ multiplications modulo $q$ and 
