@@ -284,6 +284,7 @@ $\mathsf{INTT}_{\sf sb}(M)$
 \end{algorithm}
 
 \subsection{Security, Parameters}
+\label{section:security-parameters}
 
 The encryption scheme is $\mathsf{IND-CPA}$-secure under assumed hardness of a specific member of the decisional Ideal LWE class of problems as described by Bootland \emph{et al.}~\cite{BootlandCSV21}. This specific member is defined below.
 
@@ -309,11 +310,13 @@ The aptitude of these estimators warrants a note of caution. The estimators work
 
 \begin{table}
 \centering
-\begin{tabular}{c||c|c|c}
-$m$ & Albrech~\emph{et al.} & Ducas~\emph{et al.} & failure probability \\ \hline
-3 & 148.9 & 135.3 & $< 2^{-995\phantom{\vert}}$ \\
-4 & 211.7 & 192.2 & $\sim 2^{-725}$ \\
-6 & 263.5 & 310.8 & $\sim 2^{-331}$
+\caption{Parameters, security, failure probability}
+\label{table:parameters}
+\begin{tabular}{c||c|c|c|c}
+sec. lvl. & $m$ & Albrech~\emph{et al.} & Ducas~\emph{et al.} & failure probability \\ \hline
+128 & 3 & 148.9 & 135.3 & $< 2^{-995\phantom{\vert}}$ \\
+192 & 4 & 211.7 & 192.2 & $\sim 2^{-725}$ \\
+256 & 6 & 263.5 & 310.8 & $\sim 2^{-331}$
 \end{tabular}
 \end{table}
 
