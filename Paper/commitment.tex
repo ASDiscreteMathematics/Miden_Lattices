@@ -1,5 +1,6 @@
 %!TeX root=miden_lattices.tex
 \section{Post-quantum commitments}
+\label{section:commitments}
 
 This section specifies a publicly rerandomizable commitment scheme over the native finite field $\mathbb{Z}_p$. A basic commitment scheme consists of two functions:
 \begin{itemize}
@@ -263,7 +264,7 @@ $\mathbf{B} \leftarrow [[0 : 0 \leq i < 64] : 0 \leq j < m]$
 	$\mathbf{B}[i] \leftarrow \mathbf{B}[i] + \mathbf{d}[i]$
 }
 
-$K \leftarrow [\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64]$ // $d \sim \Xi$
+$K \leftarrow [\mathsf{sample\_short\_field\_element}() : 0 \leq i < 64]$ // initialize with $e \sim \Upsilon^{64}$
 
 $\mathsf{NTT}_{\it sb}(K)$
 

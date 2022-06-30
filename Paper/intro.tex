@@ -1,3 +1,23 @@
 %!TeX root=miden_lattices.tex
 \section{Introduction}
- 
+
+The prime number $p = 18446744069414584321 = 2^{64} - 2^{32} + 1 = \Phi_6(2^{32})$ is incredibly useful for proof systems for general-purpose computational integrity. This usefulness originates from several factors:
+\begin{itemize}
+ \item integers modulo $p$ fit into one 64-bit register;
+ \item the field $\mathbb{Z}_p, +, \times$ has a multiplicative subgroup of order $2^{32}$, giving rise to fast arithmetic using NTTs as well as the FRI~\cite{fri} polynomial commitment scheme for constructing transparent SNARKs;
+ \item any integer modulo $p$ can be efficiently decomposed into the unique pair of 32-bit limbs;
+ \item the product of any two integers less than $2^{32}$ is less than $p$;
+ \item the balanced ternary expansion is sparse, and thus gives rise to efficient modular reduction.
+\end{itemize}
+In light of these compelling properties, $p$ was selected by a number of independent teams for their general purpose computational integrity proof systems, including Polygon Zero, Risc Zero, Triton, and Polygon Miden.
+
+It is often necessary to prove the correct execution of cryptographic algorithms, such as public key encryption or signature verification. The different cost model of proof systems versus physical computers motivates a re-evaluation of the appropriate cryptographic algorithms. In this line of research, Pornin recently proposed ECGFp5~\cite{ecgfp5}, an elliptic curve defined over degree-five extension field of $\mathbb{Z}_p$.
+
+This report focuses on lattice-based cryptography. Specifically:
+\begin{itemize}
+\item Section~\ref{section:arithmetic} addresses the question how to do the arithmetic for lattice-based cryptography efficiently on virtual machines defined over $\mathbb{Z}_p$, including NTT, memory addressing, and embedding multiple integers into each field element.
+\item Section~\ref{section:signatures} discusses supporting the two lattice-based signature schemes selected by the NIST PQC competition, Falcon and Dilithium.
+\item Section~\ref{section:encryption} proposes a new lattice-based public key encryption scheme defined over $\mathbb{Z}_p$, which makes use of the embedding technique described above.
+\item Section~\ref{section:commitments} proposes a \emph{publicly re-randomizable} commitment scheme based on essentially the same construction.
+\end{itemize}
+Supporting python code for these techniques and proposed algorithms is available at \url{https://github.com/KULeuven-COSIC/Miden_Lattices}.

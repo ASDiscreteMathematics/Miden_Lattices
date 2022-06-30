@@ -1,5 +1,6 @@
 %!TeX root=miden_lattices.tex
 \section{Fast arithmetic in cyclotomic rings}
+\label{section:arithmetic}
 
 \subsection{Non-native parameter sets}
 
@@ -128,7 +129,7 @@ combined with the scaling by $N$ in the final step of the INTT.
 \subsection{Optimizing the NTT}
 
 To optimize the NTT, it is possible to absorb the scaling by $\psi$ and also to work around 
-the BitReverse as is done in \cite{longa}.  In the forward NTT, the function will return a $\psi$-scaled NTT
+the BitReverse as is done in \cite{longa}.\todo{add citation}  In the forward NTT, the function will return a $\psi$-scaled NTT
 in bit-reverse order, which will be undone in the INTT.
 
 Let $NTT_{sb}$ denote the function which computes the NTT of the scaled polynomial $a(\psi x)$ and where the output 
@@ -211,7 +212,8 @@ $k = N$
 \end{algorithm} 
 
 To compute the product $c(x)$ of two polynomials in $a(x), b(x) \in \Z_q[x]/(x^N+1)$, we can now simply it as 
-\[  c(x) = INTT_{sb}(NTT_{sb}(a(x)) \cdot NTT_{sb}(b(x)) \, . \]
+\[  c(x) = INTT_{sb}(NTT_{sb}(a(x)) \circ NTT_{sb}(b(x)) \, , \]
+where $\circ$ denotes element-wise multiplication.
 
 The function $NTT_{sb}$ uses $(N/2) \log_2(N)$ multiplications modulo $q$ and a total of $N \log_2(N)$ additions/subtractions modulo $q$.
 Due to the final scaling, the function $INTT_{sb}$ requires $(N/2) \log_2(N) + N$ multiplications modulo $q$ and 
@@ -225,7 +227,7 @@ Example: for $N = 256$ we thus require 3328 multiplications modulo $q$ and 6144 
 
 \subsection{NTT for $4$-element word arrays}
 
-In Miden VM, a word consists of $4$ field elements and the RAM is word-addressable, so we can read or write 4 field
+In Miden VM, a word consists of $4$ field elements and the RAM is addressable by words, so we can read or write 4 field
 elements in one cycle.  As such, it is interesting to develop an NTT routine which takes into account the word-addressable
 memory.   We see two possibilities depending on the application:
 
