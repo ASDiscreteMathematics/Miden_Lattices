@@ -307,11 +307,11 @@ if (__name__ == "__main__"):
     print("OK" if (test_sign_KAT() is True) else "Not OK")
 
     # wrapper_test(test_samplerz_simple, "SamplerZ", None, 100000)
-    wrapper_test(test_samplerz_KAT, "SamplerZ KATs", None, 1)
-    print("")
+    #wrapper_test(test_samplerz_KAT, "SamplerZ KATs", None, 1)
+    #print("")
 
-    for i in range(6, 11):
-        n = (1 << i)
-        it = 1000
-        print("Test battery for n = {n}".format(n=n))
-        test(n, it)
+    # for i in range(9, 11):
+    #    n = (1 << i)
+    #    it = 1
+    #    print("Test battery for n = {n}".format(n=n))
+    #    test(n, it)

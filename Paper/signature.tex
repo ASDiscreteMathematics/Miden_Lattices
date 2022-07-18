@@ -84,3 +84,39 @@ which requires:
 \item $k (\ell + 1)$ pointwise multiplications of arrays of 256 elements in $\F_q$
 \eit
 
+\subsection{Falcon}
+
+Falcon~\cite{falcon} is a lattice-based signature scheme using NTRU lattices and a hash-and-sign approach following GPV~\cite{}.
+Falcon works in a cyclotomic ring $R_{q,n} =  \Z_q[x]/(x^n+1)$ with $n = 2^k$, and an NTRU public key consists 
+of a polynomial $h \in R_{q,n}$ which is computed as $g \cdot f^{-1}$ in $R_{q,n}$ where $f,g \in R_{q,n}$ that have small coefficients.
+Recovering $f, g$ from $h$ corresponds to the NTRU-problem.  
+
+Falcon specifies two parameter sets $n = 512$ and $n = 1024$ corresponding to NIST security levels I and V.  The modulus 
+$q = 12289 = 12 \cdot 1024 + 1$ is prime and fixed for both sets.  The coefficients of the polynomials $f,g$ are sampled
+from a discrete Gaussian with standardard deviation $\sigma_{f,g} = 1.17 \sqrt{q/2n}$.
+
+The signature of a message $m$ consists of a salt $r$ and a pair of small polynomials $(s_1, s_2)$ such that 
+$s_1 + s_2 h = H(r || m)$.  Furthermore, $s_1$ can be derived fully from $m , r$ and $s_2$ so the signature
+is simply given by $(r, s_2)$.  The signature $(s_1,s_2)$ must satisfy $||(s_1,s_2)||^2 \leq \lfloor \beta^2 \rfloor$ where
+$\beta = 1.1 \sigma \sqrt{2n}$.  In particular, $\beta^2 = 34034726$ for Level-I parameters and $\beta^2 = 70265242$
+for Level-V parameters.  To verify a Falcon signature, one proceeds as described in Algorithm~\ref{algo:falcon_verify}
+
+\begin{algorithm}[!ht] \label{algo:falcon_verify}
+\begin{scriptsize}
+\caption{\emph{Falcon verification}}
+\KwIn{Message $m$, signature $sig = (r,s)$, publick key $pk = h$ and bound $\lfloor \beta^2 \rfloor$}
+\KwOut{boolean indicating if signature is valid}
+\Begin{
+\everypar={\nl}
+$c := HashToPoint(r||m,q,n)$ 
+
+$s_2 = Decompress(s, 8 \cdot sbytelen - 328)$
+
+if $(s_2 = \perp)$ then return false
+
+$s_1 = c - s_2 h \bmod q$
+
+if $||(s_1,s_2)||^2 \leq  \lfloor \beta^2 \rfloor$ then return true else return false
+}
+\end{scriptsize}
+\end{algorithm} 

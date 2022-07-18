@@ -1,4 +1,6 @@
-import random
+import random 
+
+four_elem = True
 
 q = 2**64 - 2**32 + 1
 N = 512
@@ -7,15 +9,15 @@ hN = 256 # N >> 1
 # 1024-th primitive root of unity mod q
 # needed to multipy in Z[x]/(x^512+1)
 
-psi = 19112242249724047
+psi_1024 = 19112242249724047
 
 # inverse of N modulo q
 
 inv_N = 18410715272404008961  
 
-# bit reversed arrays of powers of psi
+# bit reversed arrays of powers of psi_1024
 
-psi_rev = [ 1, 18446462594437873665, 1099511627520, 16777216, 18446744000695107585, 4503599626321920, 4096, 17293822564807737345, 
+psi_1024_rev = [ 1, 18446462594437873665, 1099511627520, 16777216, 18446744000695107585, 4503599626321920, 4096, 17293822564807737345, 
 17179869180, 262144, 18446739671368073217, 288230376084602880, 64, 18428729670905102337, 70368744161280, 1073741824,
 18446744060824649729, 562949953290240, 512, 18302628881338728449, 137438953440, 2097152, 18446708885042495489,
 2305843008676823040, 8, 18444492269600899073, 8796093020160, 134217728, 18446743519658770433, 36028797010575360, 32768, 
@@ -127,7 +129,7 @@ def NTT_512(a):
 		start = 0
 		while start < N:
 			k = k+1
-			zeta = psi_rev[k]
+			zeta = psi_1024_rev[k]
 			for j in range(start,start+len):
 				t = (zeta * a[j + len])%q
 				a[j + len] = (a[j] - t)%q
@@ -147,7 +149,7 @@ def iNTT_512(a):
 		start = 0
 		while start < N:
 			k = k-1
-			zeta = -psi_rev[k]
+			zeta = -psi_1024_rev[k]
 			for j in range(start, start + len):
 				t = a[j]
 				a[j] = (t + a[j + len])%q
@@ -169,16 +171,11 @@ def NTT_4_512(a):
 	len = 256
 	N = 512
 
-	R = 0
-	W = 0
-	A = 0
-	M = 0
-
 	while len > 2:
 		start = 0
 		while start < (N>>2):
 			k = k+1
-			zeta = psi_rev[k]
+			zeta = psi_1024_rev[k]
 			for j in range(start,start+(len>>2)):
 				A1 = a[j]  # read 4 tuple
 				A2 = a[j + (len >> 2)] # second 4 tuple	
@@ -188,10 +185,6 @@ def NTT_4_512(a):
 				t4 = (zeta * A2[3])%q
 				a[j] = [(A1[0] + t1)%q, (A2[0] + t2)%q, (A1[2] + t3)%q, (A2[2] + t4)%q]
 				a[j+(len>>2)] = [(A1[0] - t1)%q, (A2[0] - t2)%q, (A1[2] - t3)%q, (A2[2] - t4)%q]
-				R += 2
-				W += 2
-				M += 4
-				A += 8
 			start += (len>>1)
 		len >>= 1	
 
@@ -199,34 +192,24 @@ def NTT_4_512(a):
   
 	for j in range(0,N>>2):
 		k = k+1
-		zeta = psi_rev[k]
+		zeta = psi_1024_rev[k]
 		A1 = a[j]
 		t1 = (zeta * A1[1])%q
 		t2 = (zeta * A1[3])%q
 		a[j] = [(A1[0] + t1)%q, (A1[2] + t2)%q, (A1[0] - t1)%q, (A1[2] - t2)%q]	
-		R += 1
-		W += 1
-		M += 2
-		A += 4
    
   # doing len = 1
 
 	for j in range(0,N>>2):
 		k = k+1
-		zeta = psi_rev[k]
+		zeta = psi_1024_rev[k]
 		A1 = a[j]
 		t1 = (zeta * A1[1])%q
 		k = k+1
-		zeta = psi_rev[k]  
+		zeta = psi_1024_rev[k]  
 		t2 = (zeta * A1[3])%q
 		a[j] = [(A1[0] + t1)%q, (A1[0] - t1)%q, (A1[2] + t2)%q, (A1[2] - t2)%q]
-		R += 1
-		W += 1
-		M += 2
-		A += 4
 		
-	print(R, W, M, A)
-
 
 # 4 element version
 # a is now array of quadruples where input is assumed in bit reversed order
@@ -245,9 +228,9 @@ def iNTT_4_512(a):
 
 	for j in range(N >> 2):
 		k = k-1
-		zeta1 = -psi_rev[k]
+		zeta1 = -psi_1024_rev[k]
 		k = k-1
-		zeta2 = -psi_rev[k]
+		zeta2 = -psi_1024_rev[k]
 		
 		A1 = a[j]
 		u1 = (A1[0] + A1[1])%q
@@ -264,9 +247,9 @@ def iNTT_4_512(a):
 		start = 0
 		while (start < (N>>2)):  #for start := 0 to (N div 4)-1 by len do
 			k = k-1
-			zeta1 = -psi_rev[k]
+			zeta1 = -psi_1024_rev[k]
 			k = k-1
-			zeta2 = -psi_rev[k]
+			zeta2 = -psi_1024_rev[k]
 			for j in range(start, start + (len>>1)):
 				A1 = a[j]
 				A2 = a[j + (len>>1)];
@@ -295,7 +278,7 @@ def iNTT_4_512(a):
 	# len = N/2 and scaling by N together
  
 	k = k-1
-	zeta = -psi_rev[k]
+	zeta = -psi_1024_rev[k]
 	zeta_invN = (zeta*inv_N)%q
  
 	for j in range(N>>2):
@@ -334,29 +317,51 @@ def map_4_lin_offset(a):
 	return res		
 		
 		
+# makes copy to avoid overwriting, this can be avoided if inputs can be overwritten		
 		
-"""		
-# sanity checking
+def fast_mul_512(a, b):
+	if (four_elem):
+		a4 = map_lin_4_offset(a)
+		b4 = map_lin_4_offset(b)
+		NTT_4_512(a4)
+		NTT_4_512(b4)
+		for j in range(128):
+			for i in range(4):
+				a4[j][i] = (a4[j][i]*b4[j][i])%q;
+		iNTT_4_512(a4)
+		return map_4_lin_offset(a4)
+	else:
+		ac = a.copy()
+		bc = b.copy()
+		NTT_512(ac)
+		NTT_512(bc)
+		for j in range(512):
+			ac[j] = (ac[j]*bc[j])%q;
+		iNTT_512(ac)
+		return ac
+		
 
+"""
 N = 512
 a = [random.randint(0,q-1) for _ in range(N)]
-a4 = map_lin_4_offset(a)
+b = [random.randint(0,q-1) for _ in range(N)]
 
-a_orig = a.copy() 
-a4_orig = a4.copy()
+# schoolbook multiply
+def schoolbook_mult(a, b):
 
-NTT_512(a)
-NTT_4_512(a4)
+	c = [0 for _ in range(N)]
+	
+	for j in range(N):
+		for k in range(N):
+			i = (j+k)%N
+			prod = (a[j]*b[k])%q;
+			if i != (j+k):
+				prod = -prod
+			c[i] = (c[i] + prod)%q;
+	return c
+	
+c = schoolbook_mult(a, b)
+d = fast_mul_512(a, b)
 
-b = map_4_lin(a4)
-print("Sanity check 4 way forward:", a == b)
-
-iNTT_512(a);
-print("Sanity check inverse NTT:", a == a_orig)
-
-iNTT_4_512(a4)
-print("Sanity check 4 way inverse:", a4_orig == a4)
-
-c = map_4_lin_offset(a4)
-print("Sanity check inverse maps:", c == a)
+print("Sanity check :", d == c)	
 """

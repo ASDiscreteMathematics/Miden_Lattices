@@ -1,4 +1,6 @@
-import random
+import random 
+
+four_elem = False
 
 q = 2**64 - 2**32 + 1
 N = 1024
@@ -273,12 +275,7 @@ def NTT_4_1024(a):
 	k = 0
 	len = 512
 	N = 1024
-
-	R = 0
-	W = 0
-	A = 0
-	M = 0
-
+	
 	while len > 2:
 		start = 0
 		while start < (N>>2):
@@ -293,10 +290,6 @@ def NTT_4_1024(a):
 				t4 = (zeta * A2[3])%q
 				a[j] = [(A1[0] + t1)%q, (A2[0] + t2)%q, (A1[2] + t3)%q, (A2[2] + t4)%q]
 				a[j+(len>>2)] = [(A1[0] - t1)%q, (A2[0] - t2)%q, (A1[2] - t3)%q, (A2[2] - t4)%q]
-				R += 2
-				W += 2
-				M += 4
-				A += 8
 			start += (len>>1)
 		len >>= 1	
 
@@ -309,11 +302,7 @@ def NTT_4_1024(a):
 		t1 = (zeta * A1[1])%q
 		t2 = (zeta * A1[3])%q
 		a[j] = [(A1[0] + t1)%q, (A1[2] + t2)%q, (A1[0] - t1)%q, (A1[2] - t2)%q]	
-		R += 1
-		W += 1
-		M += 2
-		A += 4
-   
+		
   # doing len = 1
 
 	for j in range(0,N>>2):
@@ -325,14 +314,7 @@ def NTT_4_1024(a):
 		zeta = psi_2048_rev[k]  
 		t2 = (zeta * A1[3])%q
 		a[j] = [(A1[0] + t1)%q, (A1[0] - t1)%q, (A1[2] + t2)%q, (A1[2] - t2)%q]
-		R += 1
-		W += 1
-		M += 2
-		A += 4
 		
-	print(R, W, M, A)
-
-
 # 4 element version
 # a is now array of quadruples where input is assumed in bit reversed order
 # chopped up into 4 element arrays, i.e. [[a[i], a[i+1], a[i+2], a[i+3]]
@@ -438,26 +420,51 @@ def map_4_lin_offset(a):
 		
 	return res		
 		
-# sanity checking
 
+# makes copy to avoid overwriting, this can be avoided if inputs can be overwritten		
+		
+def fast_mul_1024(a, b):
+	if (four_elem):
+		a4 = map_lin_4_offset(a)
+		b4 = map_lin_4_offset(b)
+		NTT_4_1024(a4)
+		NTT_4_1024(b4)
+		for j in range(256):
+			for i in range(4):
+				a4[j][i] = (a4[j][i]*b4[j][i])%q;
+		iNTT_4_1024(a4)
+		return map_4_lin_offset(a4)
+	else:
+		ac = a.copy()
+		bc = b.copy()
+		NTT_1024(ac)
+		NTT_1024(bc)
+		for j in range(1024):
+			ac[j] = (ac[j]*bc[j])%q;
+		iNTT_1024(ac)
+		return ac
+
+"""
 N = 1024
 a = [random.randint(0,q-1) for _ in range(N)]
-a4 = map_lin_4_offset(a)
+b = [random.randint(0,q-1) for _ in range(N)]
 
-a_orig = a.copy() 
-a4_orig = a4.copy()
+# schoolbook multiply
+def schoolbook_mult(a, b):
 
-NTT_1024(a)
-NTT_4_1024(a4)
+	c = [0 for _ in range(N)]
+	
+	for j in range(N):
+		for k in range(N):
+			i = (j+k)%N
+			prod = (a[j]*b[k])%q;
+			if i != (j+k):
+				prod = -prod
+			c[i] = (c[i] + prod)%q;
+	return c
+	
+c = schoolbook_mult(a, b)
+d = fast_mul_1024(a, b)
 
-b = map_4_lin(a4)
-print("Sanity check 4 way forward:", a == b)
-
-iNTT_1024(a);
-print("Sanity check inverse NTT:", a == a_orig)
-
-iNTT_4_1024(a4)
-print("Sanity check 4 way inverse:", a4_orig == a4)
-
-c = map_4_lin_offset(a4)
-print("Sanity check inverse maps:", c == a)
+print("Sanity check :", d == c)	
+"""
