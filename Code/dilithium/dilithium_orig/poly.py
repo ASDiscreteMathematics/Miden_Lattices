@@ -1,7 +1,6 @@
 from params import *
 from rounding import *
-from ntt_dilithium import *
-from ntt_4_256 import *
+from ntt import *
 from Crypto.Hash import SHAKE256
 from Crypto.Hash import SHAKE128
 
@@ -243,7 +242,7 @@ def poly_uniform(a, seed, nonce):
 def poly_pointwise(c, a, b):
 	
 	for i in range(N):
-		c.coeffs[i] = (a.coeffs[i] * b.coeffs[i]) %Qmiden
+		c.coeffs[i] = (a.coeffs[i] * b.coeffs[i]) %Q
 
 
 #*************************************************
@@ -273,7 +272,7 @@ def poly_ntt(a):
 def poly_sub(c, a, b): 
 	
 	for i in range(N):
-		c.coeffs[i] = (a.coeffs[i] - b.coeffs[i])%Qmiden
+		c.coeffs[i] = (a.coeffs[i] - b.coeffs[i])%Q
 
 
 #/*************************************************
@@ -288,7 +287,7 @@ def poly_sub(c, a, b):
 
 def poly_add(c, a, b):  
 	for i in range(N):
-		c.coeffs[i] = (a.coeffs[i] + b.coeffs[i])%Qmiden
+		c.coeffs[i] = (a.coeffs[i] + b.coeffs[i])%Q
 
 
 	
@@ -320,18 +319,6 @@ def poly_invntt(a):
 		
 	iNTT_256(a.coeffs)
 
-
-# Maps polynomial in Dilithium NTT domain to Miden NTT domain
-	
-def poly_Miden_NTT(a):
-
-	# to time domain using Dilithium NTT
-	iNTT_Dilithium_256(a.coeffs)
-	
-	# to frequency domain in Miden
-	NTT_256(a.coeffs)
-	
-	
 	
 #/*************************************************
 #* Name:        poly_use_hint
@@ -372,15 +359,6 @@ def polyw1_pack(r, index, a):
 	elif (GAMMA2 == (Q-1)//32):
 		for i in range(N >> 1):
 			r[index + i] = ((a.coeffs[2*i+0])%256) | ((a.coeffs[2*i+1] << 4)%256)
-
-	
-def poly_mod_Dilithium_prime(a):
-	""" Does centered reduction using Miden prime and then reduction mod Dilithium prime q"""
-	for i in range(N):
-		a.coeffs[i] = a.coeffs[i]%Qmiden
-		if (a.coeffs[i] > (Qmiden >> 1)): a.coeffs[i] -= Qmiden
-		a.coeffs[i] = a.coeffs[i]%Q
-		
 		
 def poly_print(v):
 	

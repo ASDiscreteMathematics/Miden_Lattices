@@ -75,7 +75,7 @@ $b[i] = \frac{1}{N} \sum_{j = 0}^{N-1} a[j] \omega^{-i j}$, which can be compute
 by $\omega^{-1}$ and scaling by $N$.
 
 Since $\omega$ is an $N$-th root of unity, note that this also corresponds to the evaluation 
-of the polynomial $a(x) \in \Z_q[x]/(x^N - 1)$ in $\omega$, and as such we can multiply two 
+of the polynomial $a(x) \in \Z_q[x]/(x^N - 1)$ in all powers of $\omega$, and as such we can multiply two 
 polynomials in $a(x), b(x) \in \Z_q[x]/(x^N - 1)$ by computing
 \[  c(x) = INTT(NTT(a) \cdot NTT(b))  \]
 where $\cdot$ denotes pointwise multiplication.
@@ -129,7 +129,7 @@ combined with the scaling by $N$ in the final step of the INTT.
 \subsection{Optimizing the NTT}
 
 To optimize the NTT, it is possible to absorb the scaling by $\psi$ and also to work around 
-the BitReverse as is done in \cite{longa}.\todo{add citation}  In the forward NTT, the function will return a $\psi$-scaled NTT
+the BitReverse as is done in \cite{longa}.  In the forward NTT, the function will return a $\psi$-scaled NTT
 in bit-reverse order, which will be undone in the INTT.
 
 Let $NTT_{sb}$ denote the function which computes the NTT of the scaled polynomial $a(\psi x)$ and where the output 
@@ -137,7 +137,7 @@ is given in bit-reversed order, in particular the output is given by
 \[  BitReverse(  [a(\psi \omega^{k}) : k \in [0 \ldots N-1]]   ) \, .  \]
 The resulting algorithm is given in Algorithm~\ref{algo:ntt_sb} and $\Psi_{rev}$ is the 
 array given by 
-\[ \Psi_{rev} = BitReverse( [ a(\psi \omega^{k}) : k \in [0 \ldots N-1]] ) \, . \]
+\[ \Psi_{rev} = BitReverse( [ \psi^k  : k \in [0 \ldots N-1]] ) \, . \]
 
 \begin{algorithm}[!t] \label{algo:ntt_sb}
 \begin{scriptsize}
@@ -211,7 +211,7 @@ $k = N$
 \end{scriptsize}
 \end{algorithm} 
 
-To compute the product $c(x)$ of two polynomials in $a(x), b(x) \in \Z_q[x]/(x^N+1)$, we can now simply it as 
+To compute the product $c(x)$ of two polynomials in $a(x), b(x) \in \Z_q[x]/(x^N+1)$, we can now simply compute it as 
 \[  c(x) = INTT_{sb}(NTT_{sb}(a(x)) \cdot NTT_{sb}(b(x)) \, . \]
 
 The function $NTT_{sb}$ uses $(N/2) \log_2(N)$ multiplications modulo $q$ and a total of $N \log_2(N)$ additions/subtractions modulo $q$.
@@ -246,7 +246,7 @@ all operations are now executed in a SIMD fashion.
 
 \subsubsection{Single NTT for $4$-element word arrays}
 
-Inspired by the $2$-element word memory in~\cite{}\todo{insert citation}, we extend this method to $4$ element words, by packing 
+Inspired by the $2$-element word memory in~\cite{sujoy}, we extend this method to $4$ element words, by packing 
 two consecutive words in the $2$-element array into one $4$-element word.
 
 In particular, we simple store 4 consecutive elements in a logical array as a 4-element word.
@@ -476,8 +476,9 @@ For the public key encryption and publicly re-randomizable commitment schemes we
 $$ R_p = \frac{\mathbb{Z}_p[X]}{(X^n+1)} $$
 but embeds a lattice of dimension $4n$ through the packing scheme
 $$ \mathbb{Z}_p = \frac{\mathbb{Z}[Y]}{(Y^4 - Y^2 + 1, Y-2^{16})} \enspace .$$
+In our application scenario we will always use $n = 64$.
 
-Multiplication in this ring can be achieved using NTTs of dimension $n$. Elements of this ring are short if the balanced expansion base $2^{16}$ of its coefficients are short. Specifically, if $a, b, c, d$ are small  (in absolute value) integers, then $a + b \cdot 2^{16} + c \cdot 2^{32} + d \cdot 2^{48}$ is a small element of $\mathbb{Z}_p$, and when the all the coefficients of a polynomial $f(X) \in R_p$ have this form then it is short.
+Multiplication in this ring can be achieved using NTTs of dimension $n$. Elements of this ring are short if the balanced expansion base $2^{16}$ of its coefficients are short. Specifically, if $a, b, c, d$ are small  (in absolute value) integers, then $a + b \cdot 2^{16} + c \cdot 2^{32} + d \cdot 2^{48}$ is a small element of $\mathbb{Z}_p$, and when all the coefficients of a polynomial $f(X) \in R_p$ have this form then it is short.
 
 More concretely, we use the centered binomial distribution $\Xi$ with bounds $-8$ and $8$ (both inclusive) and standard deviation $\sigma = 2$. However, $\Xi$ is a distribution of small integers; we also need field elements whose 16-bit chunks are distributed according to $\Xi$. To this end, define the distribution $\Upsilon = \sum_{i=0}^{3} \xi_i 2^{16i}$ with $\xi_i \sim \Xi$. Algorithms~\ref{algo:sample_small_integer} and~\ref{algo:sample_short_field_element} specify one way to sample these distributions. Sampling short polynomials consists of sampling a coefficient vector of length 64 whose elements are distributed according to $\Upsilon$.
 

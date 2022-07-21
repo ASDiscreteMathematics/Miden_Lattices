@@ -14,7 +14,7 @@ A commitment scheme is \emph{publicly rerandomizable} when third parties can der
 \item[b)] The party that produced the original commitment can open the new one as well as the old one, but only to the same message.
 \end{itemize}
 
-We build this functionality using the ring $R_p = \frac{\mathbb{Z}_p}{\langle X^n + 1\rangle}$ and associated tools as follows. Let $\mathbf{G} \in R_p^{m \times m}$ be a pseudorandom $m \times m$ matrix consisting of polynomials, and let $\mathbf{a}, \mathbf{b}, \mathbf{c}, \mathbf{d} \in R_p^{m \times 1}$ be vectors of short polynomials, and $e \in R_p$ a single short polynomial. Then $(\mathbf{G}, \mathbf{a}^\mathsf{T} \mathbf{G} + \mathbf{b}^\mathsf{T})$ is one LWE sample, and $(\mathbf{G}\mathbf{c} + \mathbf{d}, \mathbf{a}^\mathsf{T} \mathbf{G} \mathbf{c} + \mathbf{b}^\mathsf{T} \mathbf{c} + e)$ is another. Both LWE samples commit to $\mathbf{a}$, in the sense that it is a short approximate solution, and that such solutions are difficult to find. This observation gives rise to the following scheme:
+We build this functionality using the ring $R_p = \frac{\mathbb{Z}_p}{\langle X^n + 1\rangle}$ and associated tools as follows. Let $\mathbf{G} \in R_p^{m \times m}$ be a pseudorandom $m \times m$ matrix consisting of polynomials, and let $\mathbf{a}, \mathbf{b}, \mathbf{c}, \mathbf{d} \in R_p^{m \times 1}$ be vectors of short polynomials, and $e \in R_p$ a single short polynomial. Then $(\mathbf{G}, \mathbf{a}^\mathsf{T} \mathbf{G} + \mathbf{b}^\mathsf{T})$ is one MLWE sample, and $(\mathbf{G}\mathbf{c} + \mathbf{d}, \mathbf{a}^\mathsf{T} \mathbf{G} \mathbf{c} + \mathbf{b}^\mathsf{T} \mathbf{c} + e)$ is another. Both MLWE samples commit to $\mathbf{a}$, in the sense that it is a short approximate solution, and that such solutions are difficult to find. This observation gives rise to the following scheme:
 \begin{itemize}
 \item The matrix $\mathbf{G} \in R_p^{m \times m}$ is a public parameter.
 \item Cory the committer feeds the message $m \in \{0,1\}^*$ into a pseudorandom number generator and uses it to sample $\mathbf{a}$ and $\mathbf{b}$.
@@ -310,7 +310,7 @@ $\mathsf{INTT}_{\it sb}(K)$
 
 The security analysis and failure probability analysis reduces to analyses done for the encryption scheme. As a result, we can reuse the same parameters for the same target security levels and achieve the same failure probabilities. The table summarizing this is Table~\ref{table:parameters}. What remains to be said here is why these properties reduce to prior analyses.
 
-\textbf{Correctness.} Correctness of $\mathsf{VerifyRaw}$ follows from construction. Correctness of $\mathsf{VerifyRerandomized}$ is more intricate. This function returns $\mathsf{True}$ if the noise term
+\textbf{Correctness.} Correctness of $\mathsf{VerifyRaw}$ follows from construction. Correctness of $\mathsf{VerifyRerandomized}$ is more intricate. This function returns $\mathsf{False}$ if the noise term
 \begin{equation*}
 \mathbf{b}^\mathsf{T} \mathbf{c} + e  - \mathbf{a}^\mathsf{T} \mathbf{d}
 \end{equation*}

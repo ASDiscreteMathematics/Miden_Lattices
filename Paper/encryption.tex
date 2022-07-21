@@ -75,7 +75,7 @@ $m \leftarrow []$
 \end{scriptsize}
 \end{algorithm} 
 
-The following algorithms specify the public key encryption scheme. Note that the operations $+$ and $\times$ apply to vectors of 64 field elements. Specifically, these operations compute addition and multiplication in the ring $R_p$. This corresponds to element-wise addition and multiplication of polynomials followed by reduction modulo $X^{64}-1$.
+The following algorithms specify the public key encryption scheme. Note that the operations $+$ and $\times$ apply to vectors of 64 field elements. Specifically, these operations compute addition and multiplication in the ring $R_p$. This corresponds to element-wise addition and multiplication of polynomials followed by reduction modulo $X^{64}+1$.
 
 \begin{algorithm}[!t] \label{algo:tb4-keygen-naive}
 \begin{scriptsize}
@@ -170,7 +170,7 @@ $M \leftarrow C - K$
 
 \subsection{Optimized Scheme}
 
-The strategy to compute multiplications in the polynomial quotient ring $R_p$ by using NTTs followed by INTTs is redundant because almost all INTT maps at the end of one operation are follwed up with an NTT map preparing for the next operation. It pays to represent the polynomials in frequency domain. The time domain representation is only necessary when sampling small elements and when decoding the message. This observation gives rise to the equivalent public key encryption scheme specified by Algorithms~\ref{algo:tb4-keygen-optimized}-\ref{algo:tb4-enc-optimized}-\ref{algo:tb4-dec-optimized}. Note that the secret key, public key, and ciphertext are now represented in frequency domain. We use $\circ$ to denote the Hadamard (element-wise) product.
+The strategy to compute multiplications in the polynomial quotient ring $R_p$ by using NTTs followed by INTTs is redundant because almost all INTT maps at the end of one operation are follwed up with an NTT map preparing for the next operation. It pays to represent the polynomials in the frequency domain. The time domain representation is only necessary when sampling small elements and when decoding the message. This observation gives rise to the equivalent public key encryption scheme specified by Algorithms~\ref{algo:tb4-keygen-optimized}-\ref{algo:tb4-enc-optimized}-\ref{algo:tb4-dec-optimized}. Note that the secret key, public key, and ciphertext are now represented in frequency domain. We use $\circ$ to denote the Hadamard (element-wise) product.
 
 \begin{algorithm}[!t] \label{algo:tb4-keygen-optimized}
 \begin{scriptsize}
@@ -287,7 +287,7 @@ $\mathsf{INTT}_{\sf sb}(M)$
 \subsection{Security, Parameters}
 \label{section:security-parameters}
 
-The encryption scheme is $\mathsf{IND-CPA}$-secure under assumed hardness of a specific member of the decisional Ideal LWE class of problems as described by Bootland \emph{et al.}~\cite{BootlandCSV21}. This specific member is defined below.
+The encryption scheme is $\mathsf{IND-CPA}$-secure under the  assumed hardness of a specific member of the decisional Ideal LWE class of problems as described by Bootland \emph{et al.}~\cite{BootlandCSV21}. This specific member is defined below.
 
 \vspace{0.25cm}
 
@@ -314,7 +314,7 @@ The aptitude of these estimators warrants a note of caution. The estimators work
 \caption{Parameters, security, failure probability}
 \label{table:parameters}
 \begin{tabular}{c||c|c|c|c}
-sec. lvl. & $m$ & Albrech~\emph{et al.} & Ducas~\emph{et al.} & failure probability \\ \hline
+sec. lvl. & $m$ & Albrecht~\emph{et al.} & Ducas~\emph{et al.} & failure probability \\ \hline
 128 & 3 & 148.9 & 135.3 & $< 2^{-995\phantom{\vert}}$ \\
 192 & 4 & 211.7 & 192.2 & $\sim 2^{-725}$ \\
 256 & 6 & 263.5 & 310.8 & $\sim 2^{-331}$

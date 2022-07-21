@@ -55,32 +55,18 @@ def crypto_sign_verify(sig, siglen, m, mlen, pk):
 
 	mat = [polyvecl() for j in range(K)]
 	polyvec_matrix_expand(mat, rho)
-		
-	""" the matrix mat is extracted in NTT domain mod the Dilithium prime
-		and using the specific ordering implied by the choice of root of unity
-		and ordering of the powers.  to use the native Miden NTT we first have
-		to map it to the Miden NTT domain by first going back to time domain 
-		and then mapping everything to Miden NTT domain.
-	"""
-	
-	polyvec_matrix_Miden_NTT(mat)
 	polyvecl_ntt(z)
 	w1 = polyveck()
 	polyvec_matrix_pointwise(w1, mat, z)
 	
 	poly_ntt(cp)	
 	polyveck_shiftl(t1)
+	
 	polyveck_ntt(t1)
 	polyveck_pointwise_poly(t1, cp, t1)
 
 	polyveck_sub(w1, w1, t1)
 	polyveck_invntt(w1)
-
-	""" 
-		need to center reduce w1 mod Miden prime and then mod Dilithium prime here
-	"""
-
-	polyveck_mod_Dilithium_prime(w1)
 	
 	# Reconstruct w1 #
 	

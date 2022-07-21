@@ -42,7 +42,8 @@ is a vector with elements in $R_{q,n}$ with coefficients smaller than $\gamma_1$
 coefficients are ${0,1}$ and the max number of $1$'s in $\bh$ is $\omega$.
 \eit
 
-The signature verification then proceeds as follows, where $H$ is SHAKE-256.
+The signature verification then proceeds as follows, where $H$ is SHAKE-256 and the specification
+of the other subroutines can be found in the original specification~\cite{dilithium}.
 \begin{algorithm}[!ht] \label{algo:dilithium_verify}
 \begin{scriptsize}
 \caption{\emph{Dilithium verification}}

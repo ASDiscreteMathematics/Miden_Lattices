@@ -52,14 +52,6 @@ def polyvec_matrix_expand(mat, rho):
 			poly_uniform(mat[i].vec[j], rho, (i << 8) + j)
 
 
-# Maps matrix which is in Dilithium NTT domain to Miden NTT domain
-
-def polyvec_matrix_Miden_NTT(mat):
-
-	for i in range(K):
-		for j in range(L):
-			poly_Miden_NTT(mat[i].vec[j])
-
 #/*************************************************
 #* Name:        polyvecl_ntt
 #*
@@ -189,11 +181,6 @@ def polyveck_pack_w1(r, w1):
 
 	for i in range(K):
 		polyw1_pack(r, i*POLYW1_PACKEDBYTES, w1.vec[i])
-		
-def polyveck_mod_Dilithium_prime(v):
-	
-	for i in range(K):
-		poly_mod_Dilithium_prime(v.vec[i])
 		
 def polyvecl_print(v):
 	

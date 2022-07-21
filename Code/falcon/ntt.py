@@ -179,28 +179,3 @@ def div_ntt(f_ntt, g_ntt):
     return [(f_ntt[i] * inv_mod_q[g_ntt[i]]) % q for i in range(deg)]
 
 
-"""
-N = 1024
-a = [random.randint(0,q-1) for _ in range(N)]
-b = [random.randint(0,q-1) for _ in range(N)]
-
-# schoolbook multiply
-def schoolbook_mult(a, b):
-
-	c = [0 for _ in range(N)]
-	
-	for j in range(N):
-		for k in range(N):
-			i = (j+k)%N
-			prod = (a[j]*b[k])%q;
-			if i != (j+k):
-				prod = -prod
-			c[i] = (c[i] + prod)%q;
-	return c
-	
-c = schoolbook_mult(a, b)
-d = mul_zq(a, b)
-
-print("Sanity check :", d == c)	
-"""
-

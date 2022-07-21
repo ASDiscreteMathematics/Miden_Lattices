@@ -3,21 +3,25 @@ clear;
 q := 2^64 - 2^32 + 1;
 IsPrime(q);
 Fq := GF(q);
-Fqx<x> := PolynomialRing(Fq);
+
 
 // 512-th primitive roots of unity mod q
 // needed to multipy in Z[x]/(x^256+1)
 
 omega := Fq ! 237214921853999334;
 
-/* Dilithium params
+
+/*
+// Dilithium params
 
 q := 2^23 - 2^13  + 1;
 Fq := GF(q);
 omega := Fq ! 1753;
-
 */
 
+
+
+Fqx<x> := PolynomialRing(Fq);
 
 function reverseIndex(i, b)
 
@@ -522,7 +526,7 @@ procedure invNTT(~a)
   end while;
  
   for j := 0 to N-1 do
-	a[j+1] := a[j+1]/N;
+	a[j+1] := (a[j+1]*8347681) mod q;
   end for;
 
 end procedure;
