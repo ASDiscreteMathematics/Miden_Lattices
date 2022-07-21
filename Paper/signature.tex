@@ -78,16 +78,37 @@ Note that this is the same result as the bit-reversed version of the normal arra
 
 This is done to speed up step 4 in the verification procedure above, which can be computed as 
 \[ NTT^{-1} (  \bA \cdot NTT(\bz)  - NTT(c) \cdot NTT(\bt_1 \cdot 2^d))  \]
-which requires:
+which requires~(*):
 \bit
 \item $\ell + k + 1$ NTTs
-\item $k$ INTTs
+\item $k$ inverse NTTs
 \item $k (\ell + 1)$ pointwise multiplications of arrays of 256 elements in $\F_q$
 \eit
 
+\subsubsection*{Integrating Dilithium in Miden} 
+Due to the formatting of $\bA$, i.e.\ it is derived from $\rho$ but directly into the NTT domain (with given ordering)
+as defined in Dilithium, it is impossible to directly use this $\bA$ with the native Miden NTT routine.
+
+If compatibility is required, then the only option is to first represent $\bA$ in the Miden NTT domain, by first
+mapping $\bA$ to the time domain and then mapping it to the Miden NTT domain.  The result $\tilde{\bA}$
+is fully equivalent with $\bA$, just represented in a different NTT domain.  This transformation however is
+costly, in that it requires $k \times \ell$ calls to the original inverse NTT routine and also $k \times \ell$
+calls to the Miden NTT routine.  Of course, it is possible to consider $\tilde{\bA}$ as part of the public key 
+directly in Miden, but it is then impossible to directly derive it from $\rho$ (without going through the
+different NTTs).
+
+It compatibility is not required, i.e.\ it is allowed to derive a different public key from $\rho$, it looks 
+tempting to derive $\tilde{\bA}$ directly in the Miden NTT domain from $\rho$.  However, this is not possible
+since the corresponding polynomials in the time domain should have coefficients uniform modulo the 
+Dilithium modulus and in particular, they should be small, since otherwise we cannot execute the Dilithium
+operations by using the Miden arithmetic.  As such, the only option here seems to be to use the 
+same $ExpandA$ routine as in Dilithium, but to consider the result to be defined in the time domain
+and then use $k \times \ell$ Miden NTTs to map it to the frequency domain.  This approach 
+will add another $k \times \ell$ Miden NTTs on top of (*) which will make it the dominating cost.
+
 \subsection{Falcon}
 
-Falcon~\cite{falcon} is a lattice-based signature scheme using NTRU lattices and a hash-and-sign approach following GPV~\cite{}.
+Falcon~\cite{falcon} is a lattice-based signature scheme using NTRU lattices and a hash-and-sign approach following GPV~\cite{GPV}.
 Falcon works in a cyclotomic ring $R_{q,n} =  \Z_q[x]/(x^n+1)$ with $n = 2^k$, and an NTRU public key consists 
 of a polynomial $h \in R_{q,n}$ which is computed as $g \cdot f^{-1}$ in $R_{q,n}$ where $f,g \in R_{q,n}$ that have small coefficients.
 Recovering $f, g$ from $h$ corresponds to the NTRU-problem.  
@@ -121,3 +142,18 @@ if $||(s_1,s_2)||^2 \leq  \lfloor \beta^2 \rfloor$ then return true else return 
 }
 \end{scriptsize}
 \end{algorithm} 
+
+\subsubsection*{Integrating Falcon in Miden} Compared to Dilithium, Falcon is much easier to integrate into Miden due
+to the fact that the main operation in Algorithm~\ref{algo:falcon_verify} is step 4 which mainly consists of the multiplication 
+$s_2 h$.  Since both polynomials are given in the time domain, it is easy to compute their product by using the Miden 
+NTT and inverse NTT routines as described in Section~\ref{section:multiplication-using-ntt} at a cost 
+of two NTTs and 1 inverse NTT plus $n$ centered reductions modulo the Miden prime and $n$ reductions
+modulo the Falcon prime.
+
+
+
+
+
+
+
+
