@@ -2,7 +2,7 @@ from params import *
 from poly import *
 from poly_vec import *
 from packing import *
-from Crypto.Hash import SHAKE256
+from Crypto.Hash import SHAKE256 # pip3 install pycryptodome
 
 #/*************************************************
 #* Name:        crypto_sign_verify

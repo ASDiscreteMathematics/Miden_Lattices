@@ -10,7 +10,7 @@ from ntt import sub_zq, mul_zq, div_zq
 from ffsampling import gram, ffldl_fft, ffsampling_fft
 from encoding import compress, decompress
 # https://pycryptodome.readthedocs.io/en/latest/src/hash/shake256.html
-from Crypto.Hash import SHAKE256
+from Crypto.Hash import SHAKE256 # pip3 install pycryptodome
 # Randomness
 from os import urandom
 from rng import ChaCha20
