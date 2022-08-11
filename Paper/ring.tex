@@ -21,7 +21,7 @@ it is well known that arithmetic in $R_q$ can be computed efficiently using the 
 This can be done natively for Falcon and Dilithium, almost natively for Kyber and with a work-around for Saber.
 
 In Miden, the native modulus is $p = 2^{64} - 2^{32} + 1$, so $\Z_q$ in this case contains a root of unity 
-of order $2^{32}$ and in particular of order $2^k$ for any $k = 1, \ldots, 32$, and we therefore get native
+of order $2^{32}$ and in particular of order $2^k$ for any $k = 1, \ldots, 32$, and we therefore get fast
 arithmetic in $R_{p,n}$ for all such $n = 2^k$.
 
 \subsection{Bound on the size of $q$}
@@ -119,7 +119,7 @@ $\omega \leftarrow \omega \cdot \omega_m$ \;
 
 
 The above however is not directly applicable since we need arithmetic in the ring $\Z_q[x]/(x^N+1)$.
-Note that the roots of $x^N+1$ are given by $\psi^{2k + 1}$ for $k = 0, \ldots, n-1$, so we would 
+Note that the roots of $x^N+1$ are given by $\psi^{2k + 1}$ for $k = 0, \ldots, n-1$,  we would 
 need to compute the evalutions of $a(x)$ in those powers.  Since $\psi^{2k + 1} = \omega^k \psi$, 
 so we could use the standard NTT above on the scaled polynomial $a(\psi x)$, and we would obtain
 \[  c(\psi x) =    INTT(NTT(a(\psi x)) \cdot NTT(b(\psi x))   \, . \]
@@ -249,7 +249,7 @@ all operations are now executed in a SIMD fashion.
 Inspired by the $2$-element word memory in~\cite{sujoy}, we extend this method to $4$ element words, by packing 
 two consecutive words in the $2$-element array into one $4$-element word.
 
-In particular, we simple store 4 consecutive elements in a logical array as a 4-element word.
+In particular, we simply store 4 consecutive elements in a logical array as a 4-element word.
 
 Looking at the NTT however, we see that in one iteration elements of the form $a[j]$ and $a[j+len]$
 are manipulated for $len = N/2, \ldots, 1$ where $len$ is divided by $2$ in each iteration.  This indicates that
@@ -480,7 +480,7 @@ In our application scenario we will always use $n = 64$.
 
 Multiplication in this ring can be achieved using NTTs of dimension $n$. Elements of this ring are short if the balanced expansion base $2^{16}$ of its coefficients are short. Specifically, if $a, b, c, d$ are small  (in absolute value) integers, then $a + b \cdot 2^{16} + c \cdot 2^{32} + d \cdot 2^{48}$ is a small element of $\mathbb{Z}_p$, and when all the coefficients of a polynomial $f(X) \in R_p$ have this form then it is short.
 
-More concretely, we use the centered binomial distribution $\Xi$ with bounds $-8$ and $8$ (both inclusive) and standard deviation $\sigma = 2$. However, $\Xi$ is a distribution of small integers; we also need field elements whose 16-bit chunks are distributed according to $\Xi$. To this end, define the distribution $\Upsilon = \sum_{i=0}^{3} \xi_i 2^{16i}$ with $\xi_i \sim \Xi$. Algorithms~\ref{algo:sample_small_integer} and~\ref{algo:sample_short_field_element} specify one way to sample these distributions. Sampling short polynomials consists of sampling a coefficient vector of length 64 whose elements are distributed according to $\Upsilon$.
+More concretely, we use the centered binomial distribution $\Xi$ with bounds $-8$ and $8$ (both inclusive) and standard deviation $\sigma = 2$. However, $\Xi$ is a distribution of small integers; we also need field elements whose 16-bit chunks are distributed according to $\Xi$. To this end, define the distribution $\Upsilon = \sum_{i=0}^{3} \xi_i 2^{16i}$ with $\xi_i \sim \Xi$. Algorithms~\ref{algo:sample_small_integer} and~\ref{algo:sample_short_field_element} specify one way to sample these distributions. Sampling short polynomials consists of sampling a coefficient vector of length $n = 64$ whose elements are distributed according to $\Upsilon$.
 
 
 \begin{algorithm}[!t] \label{algo:sample_small_integer}

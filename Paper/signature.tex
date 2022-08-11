@@ -104,7 +104,7 @@ Dilithium modulus and in particular, they should be small, since otherwise we ca
 operations by using the Miden arithmetic.  As such, the only option here seems to be to use the 
 same $ExpandA$ routine as in Dilithium, but to consider the result to be defined in the time domain
 and then use $k \times \ell$ Miden NTTs to map it to the frequency domain.  This approach 
-will add another $k \times \ell$ Miden NTTs on top of (*) which will make it the dominating cost.
+will add another $k \times \ell$ Miden NTTs on top of (*) which  makes it the dominating cost.
 
 \subsection{Falcon}
 

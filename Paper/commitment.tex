@@ -10,7 +10,7 @@ This section specifies a publicly rerandomizable commitment scheme over the nati
 
 A commitment scheme is \emph{publicly rerandomizable} when third parties can derive a new commitment so that:
 \begin{itemize}
-\item[a)] The new commitment is unlinkable to the original commitment except by the party that produced the original commitment or the party derived the new one.
+\item[a)] The new commitment is unlinkable to the original commitment except by the party that produced the original commitment or the party that derived the new one.
 \item[b)] The party that produced the original commitment can open the new one as well as the old one, but only to the same message.
 \end{itemize}
 
@@ -32,7 +32,7 @@ The scheme consists of four functions, relative to a message space $\mathcal{M}$
 \item $\mathsf{Rerandomize} : R_p^{1 \times m} \rightarrow (R_p^{\phantom{\vert}m \times 1} \times R_p)$
 \item $\mathsf{VerifyRerandomized} : \mathcal{M} \times \mathcal{R} \times (R_p^{\phantom{\vert}m \times 1} \times R_p) \rightarrow \{\mathsf{True},\mathsf{False}\}$
 \end{itemize}
-In addition to this interface we need a pseudorandom mapping from message-randomness pairs to a short vector of polynomials. We construct this manually, starting from a cryptographically secure extendable output function (XOF) to sample uniform bytes, followed by sampler to send these uniform bytes to short polynomials. We overload the function $\mathsf{sample\_short\_field\_element}$ so that it can use the argument as random bits if it is supplied; otherwise the bits are sampled at random.
+In addition to this interface we need a pseudorandom mapping from message-randomness pairs to a short vector of polynomials. We construct this manually, starting from a cryptographically secure extendable output function (XOF) to sample uniform bytes, followed by a sampler to send these uniform bytes to short polynomials. We overload the function $\mathsf{sample\_short\_field\_element}$ so that it can use the argument as random bits if it is supplied; otherwise the bits are sampled at random.
 \begin{itemize}
 \item $\mathsf{xof} : \mathcal{M} \times \mathcal{R} \times \mathbb{N} \rightarrow (\{0, 1\}^8)^*$
 \end{itemize}
@@ -321,7 +321,7 @@ is larger than $2^{14}$ in any one packed digit of any coefficient. The probabil
 Before rerandomization: suppose a commitment $\mathbf{A}$ has two valid openings: $(t_0, r_0)$ and $(t_1, r_1)$. Let $(\mathbf{a_0}, \mathbf{b_0})$ and $(\mathbf{a_1}, \mathbf{b_1})$ be the pairs of short vectors of polynomials that arise after seeding $(t_0, r_0)$ or $(t_1, r_1)$ into the XOF and sampling short vectors of polynomials from the resulting output stream. Distinguish two cases:
 \begin{itemize}
  \item $(\mathbf{a_0}, \mathbf{b_0}) \neq (\mathbf{a_1}, \mathbf{b_1})$. Over the random coins of $(\mathbf{a_1}, \mathbf{b_1})$, the probability that $\mathbf{a_0}^\mathsf{T} \mathbf{G} + \mathbf{b_0}^\mathsf{T} = \mathbf{a_1}^\mathsf{T} \mathbf{G} + \mathbf{b_0}^\mathsf{T}$ is approximately $|R_p^m|^{-1} \approx 2^{-4096m}$. Therefore, the probability of sampling distinct short vectors in the same lattice from the XOF is negligible for adversaries with bounded time.
- \item $(\mathbf{a_0}, \mathbf{b_0}) = (\mathbf{a_1}, \mathbf{b_1})$. Each binomial coefficient has about 3.047 bits of entropy. Every field element has 4 binomial coefficient; every polynomial 64 field elements, and every vector $m$ polynomials. The total is roughly $768 m$ bits of entropy. The cost of finding a collision in this distribution is on the order of $2^{384 m}$.
+ \item $(\mathbf{a_0}, \mathbf{b_0}) = (\mathbf{a_1}, \mathbf{b_1})$. Each binomial coefficient has about 3.047 bits of entropy. Every field element has 4 binomial coefficients; every polynomial 64 field elements, and every vector $m$ polynomials. The total is roughly $768 m$ bits of entropy. The cost of finding a collision in this distribution is on the order of $2^{384 m}$.
 \end{itemize}
 
 \textbf{Hiding.} Ignore the cost of attacking the XOF. The attacker who obtains $(\mathbf{a}, \mathbf{b})$ from $\mathbf{A}$ can be used to undermine the security of the encryption scheme. The attacker who obtains $\mathbf{a}$ from $(\mathbf{B}, K)$ can likewise be used to undermine the security of the encryption scheme. Therefore, the hiding property of the commitment scheme is at least as strong as the IND-CPA of the encryption scheme.
