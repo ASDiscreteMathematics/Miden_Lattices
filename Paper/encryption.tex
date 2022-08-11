@@ -32,7 +32,7 @@ In more detail, the public key encryption scheme consists of the following objec
  \item A ciphertext is a pair $(\mathbf{B}, C) \in R_p^{m \times 1} \times R_p$.
 \end{itemize}
 
-We start by defining a functionality that encryption and decryption relies on, namely the embedding and extraction of a message $m \in \{0,1\}^{256}$ into the top bits of 16-bit chunks of a polynomial $f \in R_p$.
+We start by defining a functionality that encryption and decryption relies on, namely the embedding and extraction of a message $m \in \{0,1\}^{256}$ into the top bits of every 16-bit chunk of every coefficient of a polynomial $f \in R_p$. The first such functionality, $\mathsf{embed\_msg}$ (Algorithm~\ref{algo:tb4-embed-msg}) maps a vector of 256 bits into $R_p$. The second functionality, $\mathsf{extract\_msg}$ (Algorithm~\ref{algo:tb4-extract-msg}) computes the map in the opposite direction. 
 
 \begin{algorithm}[!t] \label{algo:tb4-embed-msg}
 \begin{scriptsize}
@@ -75,7 +75,7 @@ $m \leftarrow []$
 \end{scriptsize}
 \end{algorithm} 
 
-The following algorithms ( Algorithms~\ref{algo:tb4-keygen-naive}-\ref{algo:tb4-enc-naive}-\ref{algo:tb4-dec-naive}) specify the public key encryption scheme. Note that the operations $+$ and $\times$ apply to vectors of 64 field elements. Specifically, these operations compute addition and multiplication in the ring $R_p$. This corresponds to element-wise addition and multiplication of polynomials followed by reduction modulo $X^{64}+1$.
+The following algorithms (Algorithms~\ref{algo:tb4-keygen-naive}-\ref{algo:tb4-enc-naive}-\ref{algo:tb4-dec-naive}) specify the public key encryption scheme. Note that the operations $+$ and $\times$ apply to vectors of 64 field elements. Specifically, these operations compute addition and multiplication in the ring $R_p$. These operations correspond to element-wise addition and multiplication of polynomials followed by reduction modulo $X^{64}+1$, respectively.
 
 \begin{algorithm}[!t] \label{algo:tb4-keygen-naive}
 \begin{scriptsize}
