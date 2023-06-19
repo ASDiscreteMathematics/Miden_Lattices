@@ -107,7 +107,7 @@ def reduce_Miden(f):
 	""" Does centered reduction using Miden prime and then reduction mod Falcon prime q"""
 	Q = 2**64 - 2**32 + 1
 	for i in range(len(f)):
-		f[i] = f[i]%Q
+		#f[i] = f[i]%Q
 		if (f[i] > (Q >> 1)): f[i] -= Q
 		f[i] = f[i]%q
 		
@@ -131,7 +131,7 @@ def sub_zq(f, g):
 
 def mul_zq(f, g):
 	assert len(f) == len(g)
-	deg = len(f)
+	deg = len(f)#; print(f)
 	if (deg == 512):
 		r = fast_mul_512(f, g)
 	elif (deg == 1024):
