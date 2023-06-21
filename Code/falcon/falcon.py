@@ -299,15 +299,9 @@ class SecretKey:
             for k in range(N):
                 i = (j+k) % N
                 prod = (a[j]*b[k]) % Q
-                if prod != a[j]*b[k]:
-                    print("ERRRRRRRRRRROR")
                 if N-1 < (j+k):
-                    # print(i,j+k)
                     prod = ((-(prod % q)) % q)
-                    #print(prod, "after")
                 c[i] = ((c[i] + prod)) % q
-        #print("original")
-        #print(c)
         return c
 
     def schoolbook_mult_prob(a, b):
@@ -319,15 +313,14 @@ class SecretKey:
         for j in range(N):
             for k in range(N):
                 if a[j] > q or b[k] > q:
-                    print("ERRROOORR")
-
+                    print("Error: polynomial coefficents must be in [0,q-1]")
                 i = (j+k)
                 prod = a[j]*b[k]
                 c[i] = (c[i] + prod) # no need to % Q because of the relation between N, |q| and |Q|
 
-        # a, b and c are provided ND. a and b are checked to be in [0,q-1]
+        # a, b and c are provided ND. a and b are  already checked to be in [0,q-1]
         # tau is a random challenge resulting from the hash(a||b||c)
-        # SZ to test that a * b == c as polynomials with coefficents in F_Q
+        # Schwartz-Zippel to test that a * b == c as polynomials with coefficents in F_Q
         tau = random.randint(1, Q-1)
 
         u = SecretKey.horner(a, tau)
@@ -335,20 +328,17 @@ class SecretKey:
         w = SecretKey.horner(c, tau)
 
         assert (u*v) % Q == w
-        # print((u*v)%Q,w)
 
         # We can now reduce the coefficents of c modulo q and X^N + 1
-        # to obtain the result of a * b in F_q / X^N + 1
+        # to obtain the result of a * b in Z_q / X^N + 1
         # Note that there is no overflow as the coefficients of a and b are in [0, q-1]
-        # and Q >> 2 * 512 * q^2
+        # and Q >> 512 * q^2
         z = [0 for _ in range(N)]
         for i in range(N):
             tmp1 = c[i] % q
             tmp2 = ((-(c[i+N] % q)) % q)
             z[i] = (tmp1 + tmp2) % q
 
-        # print("new")
-        # print(z)
         return z
 
     def horner(coefficients, x):
@@ -371,20 +361,21 @@ class SecretKey:
         if (s1 is False):
             print("Invalid encoding")
             return False
+        
+        # Put the coefficients in the range [0, q-1] so that we can perform all of the arithmetic
+        # in `Z_q[X] / (phi)`
+        s1 = [(coef + q) % q for coef in s1]
 
         # Compute s0 and normalize its coefficients in (-q/2, q/2]
         hashed = self.hash_to_point(message, salt)
-        ss1 = s1
-        print(s1)
-        ss1 = [(coef + q) % q for coef in ss1]
-        print(ss1)
-        #prodd = mul_zq(ss1, self.h)
-        #prodd = SecretKey.schoolbook_mult(ss1, self.h)
-        prodd = SecretKey.schoolbook_mult_prob(ss1, self.h)
-        s0 = sub_zq(hashed, prodd)  # print(prodd)
+        prod = SecretKey.schoolbook_mult_prob(s1, self.h)
+        s0 = sub_zq(hashed, prod)
         s0 = [(coef + (q >> 1)) % q - (q >> 1) for coef in s0]
 
-        # Check that the (s0, s1) is short
+        # Normalize s1's coefficients to be in (-q/2, q/2]
+        s1 = [(coef + (q >> 1)) % q - (q >> 1) for coef in s1]
+
+        # Check that (s0, s1) is short
         norm_sign = sum(coef ** 2 for coef in s0)
         norm_sign += sum(coef ** 2 for coef in s1)
         if norm_sign > self.signature_bound:
